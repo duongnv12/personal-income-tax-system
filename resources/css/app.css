@@ -3,3 +3,87 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom styles for a modern look */
+body {
+    background: #f8fafc;
+    font-family: 'Inter', sans-serif;
+    color: #22223b;
+}
+
+.card {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    transition: box-shadow 0.2s;
+}
+
+.card:hover {
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+.button {
+    background: linear-gradient(90deg, #4f8cff 0%, #38bdf8 100%);
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    border: none;
+    transition: background 0.2s, transform 0.1s;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(79,140,255,0.08);
+}
+
+.button:hover {
+    background: linear-gradient(90deg, #38bdf8 0%, #4f8cff 100%);
+    transform: translateY(-2px) scale(1.03);
+}
+
+input, select, textarea {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    outline: none;
+    transition: border 0.2s;
+    background: #f1f5f9;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #38bdf8;
+    background: #fff;
+}
+
+label {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    display: block;
+    color: #334155;
+}
+
+h1, h2, h3, h4 {
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1rem;
+}
+
+.nav-link-custom {
+    @apply px-4 py-2 font-semibold text-gray-700 transition-all duration-200 relative;
+}
+
+.nav-link-custom:hover,
+.nav-link-custom[aria-current="page"] {
+    @apply bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 shadow font-bold;
+}
+
+.nav-link-custom::after {
+    content: '';
+    @apply absolute left-4 right-4 bottom-1 h-0.5 bg-blue-400 scale-x-0 transition-transform duration-200;
+    transform-origin: left;
+}
+
+.nav-link-custom:hover::after,
+.nav-link-custom[aria-current="page"]::after {
+    @apply scale-x-100;
+}

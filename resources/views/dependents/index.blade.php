@@ -26,33 +26,35 @@
                         <p class="text-gray-600">Bạn chưa có người phụ thuộc nào được khai báo.</p>
                     @else
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
+                            <table class="min-w-full divide-y divide-gray-200 shadow-lg overflow-hidden bg-white">
+                                <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
                                     <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ và Tên</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày sinh</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quan hệ</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CCCD/CMND</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người khuyết tật</th>
-                                        <th scope="col" class="relative px-6 py-3">
-                                            <span class="sr-only">Hành động</span>
-                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">Họ và Tên</th>
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">Ngày sinh</th>
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">Quan hệ</th>
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">CCCD/CMND</th>
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">Người khuyết tật</th>
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">Hành động</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
+                                <tbody class="bg-white divide-y divide-gray-100">
                                     @foreach ($dependents as $dependent)
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap">{{ $dependent->full_name }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap">{{ $dependent->dob?->format('d/m/Y') ?? 'N/A' }}</td> {{-- THAY ĐỔI Ở ĐÂY --}}
-                                            <td class="px-6 py-4 whitespace-nowrap">{{ $dependent->relationship }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap">{{ $dependent->identification_number ?? 'N/A' }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap">{{ $dependent->is_disabled ? 'Có' : 'Không' }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <a href="{{ route('dependents.edit', $dependent) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Sửa</a>
+                                        <tr class="hover:bg-blue-50 transition">
+                                            <td class="px-6 py-4 whitespace-nowrap text-center font-medium text-gray-900">{{ $dependent->full_name }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-center">{{ $dependent->dob?->format('d/m/Y') ?? 'N/A' }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-center">{{ $dependent->relationship }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-center">{{ $dependent->identification_number ?? 'N/A' }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                                <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold {{ $dependent->is_disabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600' }}">
+                                                    {{ $dependent->is_disabled ? 'Có' : 'Không' }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                                <a href="{{ route('dependents.edit', $dependent) }}" class="inline-block bg-indigo-100 text-indigo-700 hover:bg-indigo-200 hover:text-indigo-900 px-3 py-1 rounded transition mr-2">Sửa</a>
                                                 <form action="{{ route('dependents.destroy', $dependent) }}" method="POST" class="inline-block" onsubmit="return confirm('Bạn có chắc muốn xóa người phụ thuộc này?');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-900">Xóa</button>
+                                                    <button type="submit" class="inline-block bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-900 px-3 py-1 rounded transition">Xóa</button>
                                                 </form>
                                             </td>
                                         </tr>
@@ -64,4 +66,5 @@
                 </div>
             </div>
         </div>
-    </x-app-layout>
+    </div>
+</x-app-layout>

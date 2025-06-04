@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
+        <h2 class="font-semibold text-base text-gray-800 leading-tight mb-2">
             {{ __('Tổng Quan Thuế TNCN Của Bạn') }}
         </h2>
     </x-slot>
@@ -111,19 +111,15 @@
                     <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center leading-tight mt-10">{{ __('Hành Động Nhanh') }}</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                         <a href="{{ route('income_declarations.create') }}" class="block p-5 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-blue-700 transition duration-300 transform hover:-translate-y-1 text-center font-semibold text-lg flex items-center justify-center">
-                            <svg class="h-6 w-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                             {{ __('Thêm Khai Báo Mới') }}
                         </a>
                         <a href="{{ route('income_declarations.index') }}" class="block p-5 bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl hover:from-indigo-600 hover:to-indigo-700 transition duration-300 transform hover:-translate-y-1 text-center font-semibold text-lg flex items-center justify-center">
-                            <svg class="h-6 w-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m7 0V5a2 2 0 012-2h2a2 2 0 012 2v6m-6 0H6"></path></svg>
                             {{ __('Quản lý Khai Báo') }}
                         </a>
                         <a href="{{ route('dependents.index') }}" class="block p-5 bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-xl shadow-lg hover:shadow-xl hover:from-teal-600 hover:to-teal-700 transition duration-300 transform hover:-translate-y-1 text-center font-semibold text-lg flex items-center justify-center">
-                            <svg class="h-6 w-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h2a2 2 0 002-2V4a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h2m-1-9h11m-1-2h.01M10 11H5m10 0a2 2 0 11-4 0 2 2 0 014 0zM7 20h2a2 2 0 002-2v-3a2 2 0 00-2-2H7a2 2 0 00-2 2v3a2 2 0 002 2z"></path></svg>
                             {{ __('Người Phụ Thuộc') }}
                         </a>
                         <a href="{{ route('tax.annual_settlement') }}" class="block p-5 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl shadow-lg hover:shadow-xl hover:from-orange-600 hover:to-orange-700 transition duration-300 transform hover:-translate-y-1 text-center font-semibold text-lg flex items-center justify-center">
-                            <svg class="h-6 w-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 2v-6m2 2V9a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-2m-7 4h.01M17 17h.01"></path></svg>
                             {{ __('Quyết Toán Thuế') }}
                         </a>
                     </div>

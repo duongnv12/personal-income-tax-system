@@ -31,50 +31,48 @@
                         <p class="text-gray-600">Không có người dùng nào (trừ tài khoản của bạn).</p>
                     @else
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
+                            <table class="min-w-full divide-y divide-gray-200 shadow-lg bg-white">
+                                <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
                                     <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quản trị viên?</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hoạt động?</th>
-                                        <th scope="col" class="relative px-6 py-3">
-                                            <span class="sr-only">Hành động</span>
-                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Tên</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Email</th>
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">Quản trị viên?</th>
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">Hoạt động?</th>
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">Hành động</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
+                                <tbody class="bg-white divide-y divide-gray-100">
                                     @foreach ($users as $user)
-                                        <tr>
+                                        <tr class="hover:bg-blue-50 transition">
                                             <td class="px-6 py-4 whitespace-nowrap">{{ $user->name }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap">{{ $user->email }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
+                                            <td class="px-6 py-4 whitespace-nowrap text-center">
                                                 @if ($user->is_admin)
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Có</span>
+                                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Có</span>
                                                 @else
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Không</span>
+                                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">Không</span>
                                                 @endif
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
+                                            <td class="px-6 py-4 whitespace-nowrap text-center">
                                                 @if ($user->is_active)
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Có</span>
+                                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Có</span>
                                                 @else
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Không</span>
+                                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">Không</span>
                                                 @endif
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <a href="{{ route('admin.users.edit', $user) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Sửa</a>
-                                                <form action="{{ route('admin.users.toggleActive', $user) }}" method="POST" class="inline-block mr-3" onsubmit="return confirm('Bạn có chắc muốn {{ $user->is_active ? 'khóa' : 'mở khóa' }} tài khoản này?');">
+                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                                <a href="{{ route('admin.users.edit', $user) }}" class="inline-block bg-indigo-100 text-indigo-700 hover:bg-indigo-200 hover:text-indigo-900 px-3 py-1 rounded transition mr-2">Sửa</a>
+                                                <form action="{{ route('admin.users.toggleActive', $user) }}" method="POST" class="inline-block mr-2" onsubmit="return confirm('Bạn có chắc muốn {{ $user->is_active ? 'khóa' : 'mở khóa' }} tài khoản này?');">
                                                     @csrf
                                                     @method('PATCH')
-                                                    <button type="submit" class="text-{{ $user->is_active ? 'yellow' : 'green' }}-600 hover:text-{{ $user->is_active ? 'yellow' : 'green' }}-900">
+                                                    <button type="submit" class="inline-block {{ $user->is_active ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 hover:text-yellow-900' : 'bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-900' }} px-3 py-1 rounded transition">
                                                         {{ $user->is_active ? 'Khóa' : 'Mở khóa' }}
                                                     </button>
                                                 </form>
                                                 <form action="{{ route('admin.users.destroy', $user) }}" method="POST" class="inline-block" onsubmit="return confirm('Bạn có chắc muốn xóa người dùng này? Thao tác này không thể hoàn tác!');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-900">Xóa</button>
+                                                    <button type="submit" class="inline-block bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-900 px-3 py-1 rounded transition">Xóa</button>
                                                 </form>
                                             </td>
                                         </tr>
