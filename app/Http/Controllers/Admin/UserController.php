@@ -111,6 +111,7 @@ class UserController extends Controller
             'password' => 'nullable|string|min:8|confirmed', // Mật khẩu là tùy chọn khi cập nhật, và phải được xác nhận nếu có
             // 'is_admin' => 'boolean', // <-- BỎ DÒNG NÀY HOẶC COMMENT LẠI
             // 'is_active' => 'boolean', // <-- BỎ DÒNG NÀY HOẶC COMMENT LẠI
+            
         ]);
 
         // Chỉ cập nhật mật khẩu nếu trường password không rỗng

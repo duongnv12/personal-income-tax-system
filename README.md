@@ -62,8 +62,8 @@
 1.  **Clone dự án:**
 
     ```bash
-    git clone <URL_repository_cua_ban>
-    cd ten-du-an-thue-tncn
+    git clone https://github.com/duongnv12/personal-income-tax-system
+    cd personal-income-tax-system
     ```
 
 2.  **Cài đặt Composer Dependencies:**
