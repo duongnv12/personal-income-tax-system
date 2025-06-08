@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use Illuminate\Auth\Access\Gate;
 use Illuminate\Support\ServiceProvider;
+use App\Services\TaxCalculationService; // Import service
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -12,7 +12,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(TaxCalculationService::class, function ($app) {
+            return new TaxCalculationService();
+        });
     }
 
     /**
@@ -21,6 +23,5 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
-        // If you want to register policies, move this mapping to AuthServiceProvider.
     }
 }

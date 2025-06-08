@@ -11,105 +11,141 @@ use Carbon\Carbon;
 class DependentController extends Controller
 {
     /**
-     * Hiển thị danh sách người phụ thuộc của người dùng hiện tại.
+     * Display a listing of the resource.
      */
     public function index()
     {
-        $user = Auth::user();
-        $dependents = $user->dependents()->orderBy('dob')->get(); // Lấy người phụ thuộc của người dùng đang đăng nhập
-
+        $dependents = Auth::user()->dependents()->orderBy('created_at', 'desc')->get();
         return view('dependents.index', compact('dependents'));
     }
 
     /**
-     * Hiển thị form để thêm người phụ thuộc mới.
+     * Show the form for creating a new resource.
      */
     public function create()
     {
-        return view('dependents.create');
+        // Lấy danh sách các mối quan hệ để populate dropdown
+        $relationships = [
+            'Con' => 'Con',
+            'Vợ' => 'Vợ',
+            'Chồng' => 'Chồng',
+            'Cha' => 'Cha',
+            'Mẹ' => 'Mẹ',
+            'Khác' => 'Khác',
+        ];
+        return view('dependents.create', compact('relationships'));
     }
 
     /**
-     * Lưu người phụ thuộc mới vào database.
+     * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        $user = Auth::user();
-
-        $request->validate([
+        $validatedData = $request->validate([
             'full_name' => 'required|string|max:255',
-            'dob' => 'required|date|before_or_equal:' . Carbon::now()->format('Y-m-d'), // Ngày sinh không thể sau ngày hiện tại
-            'relationship' => 'required|string|max:100', // Ví dụ: 'con', 'cha', 'mẹ', 'vợ', 'chồng'
-            'identification_number' => [ // Số CCCD/CMND
-                'nullable',
-                'string',
-                'max:20',
-                // Đảm bảo mã số định danh là duy nhất trên toàn hệ thống
-                Rule::unique('dependents', 'identification_number'),
-            ],
-            'registration_date' => 'nullable|date|before_or_equal:' . Carbon::now()->format('Y-m-d'),
-            'is_disabled' => 'boolean',
+            'dob' => 'required|date|before_or_equal:today',
+            'identification_number' => 'required|string|max:255|unique:dependents',
+            'relationship' => 'required|string|max:255',
+            'gender' => 'required|in:Nam,Nữ,Khác',
+            'registration_date' => 'required|date|before_or_equal:today', // Yêu cầu ngày đăng ký
+            'deactivation_date' => 'nullable|date|after_or_equal:registration_date', // Ngày kết thúc phải sau hoặc bằng ngày đăng ký
+            'status' => 'required|in:active,inactive',
+        ], [
+            'full_name.required' => 'Họ và tên người phụ thuộc là bắt buộc.',
+            'dob.required' => 'Ngày sinh là bắt buộc.',
+            'dob.date' => 'Ngày sinh không hợp lệ.',
+            'dob.before_or_equal' => 'Ngày sinh không được sau ngày hiện tại.',
+            'identification_number.required' => 'Số CCCD/CMND là bắt buộc.',
+            'identification_number.unique' => 'Số CCCD/CMND này đã được đăng ký.',
+            'relationship.required' => 'Mối quan hệ là bắt buộc.',
+            'gender.required' => 'Giới tính là bắt buộc.',
+            'gender.in' => 'Giới tính không hợp lệ.',
+            'registration_date.required' => 'Ngày đăng ký là bắt buộc.',
+            'registration_date.date' => 'Ngày đăng ký không hợp lệ.',
+            'registration_date.before_or_equal' => 'Ngày đăng ký không được sau ngày hiện tại.',
+            'deactivation_date.date' => 'Ngày kết thúc không hợp lệ.',
+            'deactivation_date.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày đăng ký.',
+            'status.required' => 'Trạng thái là bắt buộc.',
+            'status.in' => 'Trạng thái không hợp lệ.',
         ]);
 
-        $user->dependents()->create($request->all());
+        Auth::user()->dependents()->create($validatedData);
 
-        return redirect()->route('dependents.index')->with('success', 'Đã thêm người phụ thuộc thành công!');
+        return redirect()->route('dependents.index')->with('success', 'Đã thêm người phụ thuộc thành công.');
     }
 
     /**
-     * Hiển thị form để chỉnh sửa thông tin người phụ thuộc.
+     * Show the form for editing the specified resource.
      */
     public function edit(Dependent $dependent)
     {
-        // Đảm bảo người dùng chỉ có thể chỉnh sửa người phụ thuộc của mình
         if ($dependent->user_id !== Auth::id()) {
-            abort(403, 'Bạn không có quyền truy cập người phụ thuộc này.');
+            abort(403);
         }
-
-        return view('dependents.edit', compact('dependent'));
+        $relationships = [
+            'Con' => 'Con',
+            'Vợ' => 'Vợ',
+            'Chồng' => 'Chồng',
+            'Cha' => 'Cha',
+            'Mẹ' => 'Mẹ',
+            'Khác' => 'Khác',
+        ];
+        return view('dependents.edit', compact('dependent', 'relationships'));
     }
 
     /**
-     * Cập nhật thông tin người phụ thuộc trong database.
+     * Update the specified resource in storage.
      */
     public function update(Request $request, Dependent $dependent)
     {
-        // Đảm bảo người dùng chỉ có thể cập nhật người phụ thuộc của mình
         if ($dependent->user_id !== Auth::id()) {
-            abort(403, 'Bạn không có quyền cập nhật người phụ thuộc này.');
+            abort(403);
         }
 
-        $request->validate([
+        $validatedData = $request->validate([
             'full_name' => 'required|string|max:255',
-            'dob' => 'required|date|before_or_equal:' . Carbon::now()->format('Y-m-d'),
-            'relationship' => 'required|string|max:100',
-            'identification_number' => [
-                'nullable',
-                'string',
-                'max:20',
-                Rule::unique('dependents', 'identification_number')->ignore($dependent->id), // Bỏ qua chính bản thân nó khi cập nhật
-            ],
-            'registration_date' => 'nullable|date|before_or_equal:' . Carbon::now()->format('Y-m-d'),
-            'is_disabled' => 'boolean',
+            'dob' => 'required|date|before_or_equal:today',
+            'identification_number' => ['required', 'string', 'max:255', Rule::unique('dependents')->ignore($dependent->id)],
+            'relationship' => 'required|string|max:255',
+            'gender' => 'required|in:Nam,Nữ,Khác',
+            'registration_date' => 'required|date|before_or_equal:today',
+            'deactivation_date' => 'nullable|date|after_or_equal:registration_date',
+            'status' => 'required|in:active,inactive',
+        ], [
+            'full_name.required' => 'Họ và tên người phụ thuộc là bắt buộc.',
+            'dob.required' => 'Ngày sinh là bắt buộc.',
+            'dob.date' => 'Ngày sinh không hợp lệ.',
+            'dob.before_or_equal' => 'Ngày sinh không được sau ngày hiện tại.',
+            'identification_number.required' => 'Số CCCD/CMND là bắt buộc.',
+            'identification_number.unique' => 'Số CCCD/CMND này đã được đăng ký.',
+            'relationship.required' => 'Mối quan hệ là bắt buộc.',
+            'gender.required' => 'Giới tính là bắt buộc.',
+            'gender.in' => 'Giới tính không hợp lệ.',
+            'registration_date.required' => 'Ngày đăng ký là bắt buộc.',
+            'registration_date.date' => 'Ngày đăng ký không hợp lệ.',
+            'registration_date.before_or_equal' => 'Ngày đăng ký không được sau ngày hiện tại.',
+            'deactivation_date.date' => 'Ngày kết thúc không hợp lệ.',
+            'deactivation_date.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày đăng ký.',
+            'status.required' => 'Trạng thái là bắt buộc.',
+            'status.in' => 'Trạng thái không hợp lệ.',
         ]);
 
-        $dependent->update($request->all());
+        $dependent->update($validatedData);
 
-        return redirect()->route('dependents.index')->with('success', 'Đã cập nhật người phụ thuộc thành công!');
+        return redirect()->route('dependents.index')->with('success', 'Đã cập nhật người phụ thuộc thành công.');
     }
 
     /**
-     * Xóa người phụ thuộc khỏi database.
+     * Remove the specified resource from storage.
      */
     public function destroy(Dependent $dependent)
     {
-        // Đảm bảo người dùng chỉ có thể xóa người phụ thuộc của mình
         if ($dependent->user_id !== Auth::id()) {
-            abort(403, 'Bạn không có quyền xóa người phụ thuộc này.');
+            abort(403);
         }
 
         $dependent->delete();
 
-        return redirect()->route('dependents.index')->with('success', 'Đã xóa người phụ thuộc thành công!');
+        return redirect()->route('dependents.index')->with('success', 'Đã xóa người phụ thuộc thành công.');
     }
 }

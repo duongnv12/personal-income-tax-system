@@ -5,133 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Hệ Thống Tính Thuế TNCN') }}</title>
+    <title>{{ config('app.name', 'Laravel') }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
-        /* Tùy chỉnh CSS cho hiệu ứng parallax */
-        .parallax-bg {
-            /* Chọn một hình ảnh nền chất lượng cao và phù hợp với chủ đề của bạn */
-            background-image: url('https://images.unsplash.com/photo-1543286300-84a8677c71d9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80'); /* Thay thế bằng ảnh của bạn */
-            background-attachment: fixed; /* Tạo hiệu ứng parallax */
-            background-position: center;
-            background-repeat: no-repeat;
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to right bottom, #e0f2fe, #bfdbfe); /* Light blue gradient background */
+        }
+        .hero-section {
             background-size: cover;
+            background-position: center;
+            position: relative;
+            z-index: 1;
         }
-
-        /* Thêm một lớp phủ mờ cho hình ảnh nền */
-        .overlay-dark {
-            background-color: rgba(0, 0, 0, 0.6); /* Lớp phủ đen 60% */
+        .hero-section::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.1); /* Slight overlay for readability */
+            z-index: -1;
         }
-        .overlay-gradient {
-            background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.7) 100%);
-        }
-
-        /* Hiệu ứng mờ dần khi cuộn - có thể cần JS nếu muốn phức tạp hơn */
-        /* Ở đây dùng CSS đơn giản, phần tử sẽ mờ dần khi cuộn nếu có overflow */
-        .fade-in-section {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-            transition-delay: 0.2s; /* Trễ để có hiệu ứng đẹp hơn */
-        }
-        /* Class sẽ được thêm bằng JS khi phần tử xuất hiện trong viewport */
-        .fade-in-section.is-visible {
-            opacity: 1;
-            transform: translateY(0);
+        .card-glow:hover {
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15), 0 0 0 4px rgba(59, 130, 246, 0.3); /* Blue glow on hover */
         }
     </style>
 </head>
-<body class="font-sans antialiased text-gray-900">
-    <div class="relative min-h-screen flex flex-col parallax-bg">
-        {{-- Overlay for better text readability --}}
-        <div class="absolute inset-0 overlay-dark overlay-gradient"></div>
-
-        {{-- Navbar --}}
-        <div class="relative z-20 flex justify-between items-center p-6 lg:px-8 bg-black bg-opacity-30 backdrop-blur-sm shadow-lg">
-            <a href="{{ url('/') }}" class="text-2xl font-extrabold text-white tracking-wider flex items-center">
-                <svg class="h-8 w-8 mr-2 text-indigo-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 002-2V4a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
-                </svg>
-                {{ config('app.name', 'Tax System') }}
-            </a>
-            <div class="flex items-center space-x-4">
-                @auth
-                    <a href="{{ url('/dashboard') }}" class="text-white hover:text-indigo-300 font-medium transition duration-300">
-                        {{ __('Bảng điều khiển') }}
-                    </a>
-                @else
-                    <a href="{{ route('login') }}" class="text-white hover:text-indigo-300 font-medium transition duration-300">
-                        {{ __('Đăng nhập') }}
-                    </a>
-                    @if (Route::has('register'))
-                        <a href="{{ route('register') }}" class="ml-4 px-5 py-2 border border-indigo-400 text-indigo-400 rounded-full hover:bg-indigo-400 hover:text-white transition duration-300">
-                            {{ __('Đăng ký') }}
-                        </a>
-                    @endif
-                @endauth
+<body class="antialiased text-gray-900">
+    <div class="min-h-screen flex flex-col justify-between">
+        {{-- Navigation Bar (Optional, can be removed if a simpler header is preferred) --}}
+        <header class="py-4 px-6 bg-white shadow-sm flex justify-between items-center z-10 sticky top-0">
+            <div class="flex items-center">
+                <a href="{{ url('/') }}" class="flex items-center text-2xl font-bold text-blue-700 hover:text-blue-900 transition duration-200">
+                    <x-application-logo class="w-10 h-10 fill-current text-blue-600 mr-2" />
+                    {{ config('app.name', 'Laravel') }}
+                </a>
             </div>
-        </div>
-
-        {{-- Hero Section --}}
-        <div class="relative z-10 flex-grow flex items-center justify-center py-16">
-            <div class="text-center text-white p-8 md:p-12 rounded-lg max-w-4xl mx-auto fade-in-section">
-                <h1 class="text-6xl md:text-7xl font-extrabold leading-tight mb-6 tracking-tight font-heading">
-                    {{ config('app.name', 'Hệ Thống Tính Thuế TNCN') }}
-                </h1>
-                <p class="text-xl md:text-2xl mb-10 leading-relaxed font-light">
-                    {{ __('Quản lý, tính toán thuế thu nhập cá nhân chưa bao giờ dễ dàng đến thế.') }}
-                    <br class="hidden md:block"> {{ __('Tiết kiệm thời gian, đảm bảo chính xác và tuân thủ.') }}
-                </p>
-                <div class="space-y-4 sm:space-y-0 sm:space-x-6 flex flex-col sm:flex-row justify-center">
+            <nav class="space-x-4">
+                @if (Route::has('login'))
                     @auth
-                        <a href="{{ url('/dashboard') }}" class="inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-bold rounded-full shadow-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 transform hover:scale-105">
-                            {{ __('Bảng điều khiển của tôi') }} &rarr;
+                        <a href="{{ url('/dashboard') }}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200">
+                            Bảng điều khiển
                         </a>
                     @else
-                        <a href="{{ route('login') }}" class="inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-bold rounded-full shadow-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 transform hover:scale-105">
-                            {{ __('Bắt đầu ngay') }}
+                        <a href="{{ route('login') }}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200">
+                            Đăng nhập
                         </a>
                         @if (Route::has('register'))
-                            <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-8 py-4 border-2 border-white text-lg font-bold rounded-full shadow-lg text-white bg-transparent hover:bg-white hover:text-indigo-800 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-white transition duration-300 transform hover:scale-105">
-                                {{ __('Đăng ký') }}
+                            <a href="{{ route('register') }}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200 ml-4">
+                                Đăng ký
                             </a>
                         @endif
                     @endauth
+                @endif
+            </nav>
+        </header>
+
+        {{-- Hero Section --}}
+        <main class="flex-grow flex items-center justify-center p-6">
+            <div class="max-w-4xl text-center">
+                <h1 class="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
+                    Quản lý <span class="text-blue-700">Thuế TNCN</span> dễ dàng và chính xác
+                </h1>
+                <p class="text-xl text-gray-700 mb-10 max-w-2xl mx-auto">
+                    Hệ thống của chúng tôi giúp bạn theo dõi, tính toán và quyết toán thuế thu nhập cá nhân một cách minh bạch, tiết kiệm thời gian và giảm thiểu sai sót.
+                </p>
+                <div class="space-x-4">
+                    @if (Route::has('login'))
+                        @auth
+                            <a href="{{ url('/dashboard') }}" class="inline-flex items-center px-10 py-5 bg-blue-600 border border-transparent rounded-full font-bold text-lg text-white uppercase tracking-wider hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-4 ring-blue-300 transition ease-in-out duration-300 shadow-xl transform hover:scale-105">
+                                <i class="fa-solid fa-gauge-high mr-3"></i> Tới Bảng điều khiển
+                            </a>
+                        @else
+                            <a href="{{ route('login') }}" class="inline-flex items-center px-10 py-5 bg-blue-600 border border-transparent rounded-full font-bold text-lg text-white uppercase tracking-wider hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-4 ring-blue-300 transition ease-in-out duration-300 shadow-xl transform hover:scale-105">
+                                <i class="fa-solid fa-right-to-bracket mr-3"></i> Bắt đầu ngay
+                            </a>
+                            @if (Route::has('register'))
+                                <a href="{{ route('register') }}" class="inline-flex items-center px-10 py-5 bg-gray-200 border border-gray-300 rounded-full font-bold text-lg text-gray-800 uppercase tracking-wider hover:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-4 ring-gray-300 transition ease-in-out duration-300 shadow-xl transform hover:scale-105 ml-4">
+                                    <i class="fa-solid fa-user-plus mr-3"></i> Đăng ký tài khoản
+                                </a>
+                            @endif
+                        @endauth
+                    @endif
                 </div>
             </div>
-        </div>
+        </main>
+
+        {{-- Features/Call to Action Section (Optional: add more sections here) --}}
+        <section class="py-16 px-6 bg-white text-center shadow-lg">
+            <h2 class="text-4xl font-extrabold text-gray-800 mb-12">Tại sao chọn chúng tôi?</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl mx-auto">
+                <div class="p-8 rounded-xl shadow-lg bg-white transform hover:-translate-y-2 transition-transform duration-300 card-glow">
+                    <div class="text-blue-500 mb-4">
+                        <i class="fa-solid fa-calculator text-5xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Tính toán chính xác</h3>
+                    <p class="text-gray-600">Hệ thống tự động cập nhật biểu thuế, đảm bảo kết quả tính toán thuế luôn chính xác.</p>
+                </div>
+                <div class="p-8 rounded-xl shadow-lg bg-white transform hover:-translate-y-2 transition-transform duration-300 card-glow">
+                    <div class="text-green-500 mb-4">
+                        <i class="fa-solid fa-clock-rotate-left text-5xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Tiết kiệm thời gian</h3>
+                    <Quản lý tất cả dữ liệu thu nhập, giảm trừ tại một nơi, rút ngắn quy trình quyết toán.</p>
+                </div>
+                <div class="p-8 rounded-xl shadow-lg bg-white transform hover:-translate-y-2 transition-transform duration-300 card-glow">
+                    <div class="text-purple-500 mb-4">
+                        <i class="fa-solid fa-lock text-5xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Bảo mật tuyệt đối</h3>
+                    <p class="text-gray-600">Dữ liệu cá nhân của bạn được bảo vệ với các tiêu chuẩn bảo mật hàng đầu.</p>
+                </div>
+            </div>
+        </section>
 
         {{-- Footer --}}
-        <div class="relative z-10 flex justify-center items-center p-4 text-gray-400 text-sm bg-black bg-opacity-30 backdrop-blur-sm">
-            Laravel v{{ Illuminate\Foundation\Application::VERSION }} (PHP v{{ PHP_VERSION }}) - &copy; 2025 {{ config('app.name', 'Tax System') }}. All rights reserved.
-        </div>
+        <footer class="py-8 px-6 bg-gray-800 text-white text-center">
+            <p>&copy; {{ date('Y') }} {{ config('app.name', 'Laravel') }}. All rights reserved.</p>
+            <p class="mt-2 text-sm text-gray-400">
+                <a href="#" class="hover:underline">Chính sách bảo mật</a> | <a href="#" class="hover:underline">Điều khoản dịch vụ</a>
+            </p>
+        </footer>
     </div>
-
-    {{-- Script for fade-in effect --}}
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const sections = document.querySelectorAll('.fade-in-section');
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('is-visible');
-                    }
-                });
-            }, { threshold: 0.1 }); // Khi 10% phần tử hiển thị trong viewport
-
-            sections.forEach(section => {
-                observer.observe(section);
-            });
-        });
-    </script>
 </body>
 </html>

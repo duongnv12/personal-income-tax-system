@@ -2,578 +2,438 @@
 
 namespace App\Services;
 
-use App\Models\SystemConfig;
-use App\Models\TaxBracket;
 use App\Models\User;
+use App\Models\IncomeEntry;
+use App\Models\TaxParameter;
+use App\Models\TaxBracket;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log; // Import Log facade
 
 class TaxCalculationService
 {
-    /**
-     * Lấy giá trị cấu hình hệ thống theo key và ngày hiệu lực.
-     * Phương thức này sẽ tìm cấu hình có 'effective_date' nhỏ hơn hoặc bằng ngày cho trước
-     * và lấy bản ghi mới nhất (theo effective_date giảm dần).
-     *
-     * @param string $key Tên của cấu hình (ví dụ: 'personal_deduction_amount')
-     * @param Carbon|null $date Ngày cần áp dụng cấu hình (mặc định là ngày hiện tại)
-     * @return float|null Giá trị của cấu hình, hoặc null nếu không tìm thấy
-     */
-    private function getSystemConfigValue(string $key, ?Carbon $date = null): ?float
+    protected $taxParameters;
+    protected $taxBrackets;
+
+    // Định nghĩa các hằng số để dễ dàng tham chiếu các tham số thuế
+    const PERSONAL_DEDUCTION_KEY = 'PERSONAL_DEDUCTION';
+    const DEPENDENT_DEDUCTION_KEY = 'DEPENDENT_DEDUCTION';
+    const SOCIAL_INSURANCE_RATE_KEY = 'SOCIAL_INSURANCE_RATE'; // Tỷ lệ BHXH, BHYT, BHTN của NLĐ
+    const MAX_SOCIAL_INSURANCE_KEY = 'MAX_SOCIAL_INSURANCE'; // Trần lương tính BHXH, BHYT, BHTN
+
+    public function __construct()
     {
-        $date = $date ?? Carbon::now();
-        $config = SystemConfig::where('key', $key)
-                            ->where('effective_date', '<=', $date)
-                            ->orderBy('effective_date', 'desc')
-                            ->first();
-        return $config ? (float)$config->value : null;
+        $this->loadTaxParameters();
+        $this->loadTaxBrackets();
     }
 
     /**
-     * Lấy tất cả các bậc thuế có hiệu lực tại một thời điểm nhất định.
-     * Phương thức này sẽ tìm các bậc thuế có 'effective_date' nhỏ hơn hoặc bằng ngày cho trước
-     * và lấy bộ bậc thuế mới nhất (theo effective_date giảm dần).
-     *
-     * @param Carbon|null $date Ngày cần áp dụng biểu thuế (mặc định là ngày hiện tại)
-     * @return \Illuminate\Database\Eloquent\Collection Tập hợp các đối tượng TaxBracket
+     * Tải các tham số thuế từ database và cung cấp giá trị mặc định.
      */
-    private function getTaxBrackets(?Carbon $date = null)
+    protected function loadTaxParameters()
     {
-        $date = $date ?? Carbon::now();
-        return TaxBracket::where('effective_date', '<=', $date)
-                        ->orderBy('effective_date', 'desc') // Sắp xếp để lấy phiên bản mới nhất
-                        ->orderBy('min_income', 'asc')    // Sắp xếp theo mức thu nhập để đảm bảo đúng thứ tự bậc
-                        ->get()
-                        ->unique('level'); // Đảm bảo chỉ lấy một phiên bản cho mỗi bậc thuế (phiên bản mới nhất)
+        $params = TaxParameter::pluck('param_value', 'param_key')->toArray();
+        // Gán các giá trị mặc định để tránh lỗi nếu database trống hoặc thiếu key
+        $this->taxParameters = array_merge([
+            self::PERSONAL_DEDUCTION_KEY => 11000000,
+            self::DEPENDENT_DEDUCTION_KEY => 4400000,
+            self::SOCIAL_INSURANCE_RATE_KEY => 0.105, // 8% BHXH + 1.5% BHYT + 1% BHTN = 10.5% (tổng các khoản người lao động đóng)
+            self::MAX_SOCIAL_INSURANCE_KEY => 29800000, // Trần lương đóng BHXH
+        ], $params);
     }
 
     /**
-     * Tính toán các khoản đóng bảo hiểm bắt buộc của người lao động.
-     * Bao gồm BHXH, BHYT, BHTN. Mức đóng có thể bị giới hạn bởi mức trần.
-     *
-     * @param float $grossSalary Lương Gross dùng để tính bảo hiểm
-     * @param Carbon|null $date Ngày tính (để lấy tỷ lệ và mức trần hiệu lực)
-     * @return float Tổng số tiền bảo hiểm bắt buộc phải đóng
+     * Tải các bậc thuế từ database.
      */
-    public function calculateSocialInsuranceContribution(float $grossSalary, ?Carbon $date = null): float
+    protected function loadTaxBrackets()
     {
-        $date = $date ?? Carbon::now();
+        $this->taxBrackets = TaxBracket::orderBy('level')->get()->toArray();
+    }
 
-        // Lấy các tỷ lệ đóng bảo hiểm từ cấu hình hệ thống (hoặc giá trị mặc định nếu không tìm thấy)
-        $socialInsuranceRate = $this->getSystemConfigValue('social_insurance_rate', $date) ?? 0.08;
-        $healthInsuranceRate = $this->getSystemConfigValue('health_insurance_rate', $date) ?? 0.015;
-        $unemploymentInsuranceRate = $this->getSystemConfigValue('unemployment_insurance_rate', $date) ?? 0.01;
-        $maxSocialInsuranceBaseSalary = $this->getSystemConfigValue('max_social_insurance_base_salary', $date) ?? 36000000;
-
-        $totalInsuranceRate = $socialInsuranceRate + $healthInsuranceRate + $unemploymentInsuranceRate;
-
-        // Lương đóng bảo hiểm không vượt quá mức trần quy định
-        $salaryForInsurance = min($grossSalary, $maxSocialInsuranceBaseSalary);
-
-        return round($salaryForInsurance * $totalInsuranceRate);
+    public function getTaxBrackets()
+    {
+        return $this->taxBrackets;
     }
 
     /**
-     * Tính tổng các khoản giảm trừ của cá nhân.
-     *
-     * @param float $personalDeduction Giảm trừ bản thân
-     * @param float $dependentDeduction Giảm trừ người phụ thuộc
-     * @param float $socialInsuranceContribution Bảo hiểm bắt buộc đã đóng
-     * @param float $charityDeduction Giảm trừ từ thiện, nhân đạo, khuyến học
-     * @return float Tổng số tiền giảm trừ
-     */
-    public function calculateTotalDeductions(
-        float $personalDeduction,
-        float $dependentDeduction,
-        float $socialInsuranceContribution,
-        float $charityDeduction = 0
-    ): float {
-        return $personalDeduction + $dependentDeduction + $socialInsuranceContribution + $charityDeduction;
-    }
-
-    /**
-     * Tính thuế TNCN lũy tiến từng phần dựa trên thu nhập tính thuế.
+     * Tính toán thuế lũy tiến cho thu nhập từ tiền lương, tiền công.
+     * Logic này được thiết kế để tính thuế dựa trên các bậc thuế đã cho.
      *
      * @param float $taxableIncome Thu nhập tính thuế
-     * @param Carbon|null $date Ngày áp dụng biểu thuế (để chọn đúng phiên bản biểu thuế)
-     * @return float Số thuế TNCN phải nộp
+     * @return float
      */
-    public function calculatePIT(float $taxableIncome, ?Carbon $date = null): float
+    private function calculateProgressiveTaxSalary(float $taxableIncome): float
     {
-        if ($taxableIncome <= 0) {
+        $totalTax = 0;
+
+        foreach ($this->taxBrackets as $bracket) {
+            $incomeFrom = $bracket['income_from'];
+            $incomeTo = $bracket['income_to'];
+            $taxRate = $bracket['tax_rate'];
+
+            // Nếu thu nhập tính thuế vượt qua ngưỡng dưới của bậc hiện tại
+            if ($taxableIncome > $incomeFrom) {
+                $amountInBracket = 0;
+
+                if ($incomeTo === null) { // Bậc cuối cùng (không giới hạn trên)
+                    $amountInBracket = $taxableIncome - $incomeFrom;
+                } else {
+                    // Lượng thu nhập trong bậc hiện tại (chưa vượt qua giới hạn trên của bậc)
+                    $amountInBracket = min($taxableIncome, $incomeTo) - $incomeFrom;
+                }
+
+                $totalTax += $amountInBracket * $taxRate;
+            }
+        }
+        return round($totalTax, 0);
+    }
+
+
+    /**
+     * Calculates tax for business income.
+     * (Currently fixed rate 1.5% for presumptive tax method based on revenue for individuals)
+     * This is a simplified example. Actual business tax can be complex.
+     *
+     * @param float $revenue
+     * @return float
+     */
+    private function calculateTaxBusiness(float $revenue): float
+    {
+        // Giả định: Thuế TNCN từ kinh doanh áp dụng phương pháp khoán đối với cá nhân
+        // Doanh thu trên 100 triệu/năm mới phải nộp thuế.
+        // Thuế suất TNCN: 0.5%
+        // Để đơn giản, giả sử chỉ tính TNCN 0.5% trên doanh thu vượt 100 triệu.
+        $threshold = 100000000; // 100 triệu VNĐ/năm
+        if ($revenue <= $threshold) {
             return 0;
         }
-
-        $taxBrackets = $this->getTaxBrackets($date);
-        $totalTax = 0;
-        $remainingTaxableIncome = $taxableIncome;
-
-        foreach ($taxBrackets as $bracket) {
-            if ($remainingTaxableIncome <= 0) {
-                break;
-            }
-
-            $minIncomeOfBracket = $bracket->min_income;
-            $maxIncomeOfBracket = $bracket->max_income;
-            $taxRate = $bracket->tax_rate;
-
-            $incomeInThisBracket = 0;
-
-            // Tính phần thu nhập nằm trong bậc hiện tại
-            // Phần thu nhập trong bậc = min(remaining, max_of_bracket - (min_of_bracket - 1))
-            $upperBoundForCalculation = ($maxIncomeOfBracket !== null) ? $maxIncomeOfBracket : PHP_INT_MAX;
-            // Điều chỉnh cho bậc 1 bắt đầu từ 0
-            $lowerBoundForCalculation = ($minIncomeOfBracket > 0) ? ($minIncomeOfBracket - 1) : 0;
-
-            $incomeInThisBracket = min($remainingTaxableIncome, $upperBoundForCalculation - $lowerBoundForCalculation);
-
-            // Đảm bảo không tính thuế cho phần thu nhập âm hoặc không hợp lệ
-            $incomeInThisBracket = max(0, $incomeInThisBracket);
-
-            $totalTax += $incomeInThisBracket * $taxRate;
-            $remainingTaxableIncome -= $incomeInThisBracket;
-        }
-
-        return round($totalTax);
+        $taxRate = 0.005; // 0.5% trên doanh thu (chỉ riêng TNCN)
+        return round(($revenue - $threshold) * $taxRate, 0); // Thuế tính trên phần vượt ngưỡng
     }
 
     /**
-     * Hàm tổng hợp tính toán toàn bộ thuế TNCN và lương Net cho một tháng cụ thể.
+     * Calculates tax for investment income.
+     * (Currently fixed rate 5% on gross investment income for individuals)
      *
-     * @param User $user Đối tượng người dùng để lấy thông tin người phụ thuộc
-     * @param float $grossSalary Lương Gross hàng tháng
-     * @param float $otherTaxableIncome Các khoản thu nhập chịu thuế khác (ví dụ: hoa hồng, thưởng)
-     * @param float $nonTaxableIncome Các khoản thu nhập miễn thuế (ví dụ: tiền ăn trưa, công tác phí khoán)
-     * @param float $deductionCharity Khoản đóng góp từ thiện, nhân đạo, khuyến học
-     * @param Carbon $declarationMonth Tháng khai báo (để lấy cấu hình hiệu lực tại tháng đó)
-     * @param bool $returnDetailedSteps Nếu true, trả về chi tiết các bước tính toán
-     * @return array Kết quả tính toán chi tiết
+     * @param float $grossInvestmentIncome
+     * @return float
      */
-    public function calculateMonthlyPIT(
-        User $user,
-        float $grossSalary,
-        float $otherTaxableIncome = 0,
-        float $nonTaxableIncome = 0,
-        float $deductionCharity = 0,
-        Carbon $declarationMonth = null,
-        bool $returnDetailedSteps = false
-    ): array {
-        $declarationMonth = $declarationMonth ?? Carbon::now()->startOfMonth();
-        $steps = []; // Mảng lưu trữ các bước tính toán chi tiết
-
-        // 1. Lấy cấu hình hệ thống cho tháng hiện tại
-        $personalDeductionAmount = $this->getSystemConfigValue('personal_deduction_amount', $declarationMonth) ?? 11000000;
-        $dependentDeductionAmount = $this->getSystemConfigValue('dependent_deduction_amount', $declarationMonth) ?? 4400000;
-
-        $steps[] = [
-            'step' => 1,
-            'description' => 'Lấy các mức cấu hình hiện hành từ hệ thống:',
-            'details' => [
-                'Mức giảm trừ bản thân: ' . number_format($personalDeductionAmount) . ' VNĐ/tháng',
-                'Mức giảm trừ người phụ thuộc: ' . number_format($dependentDeductionAmount) . ' VNĐ/người/tháng',
-            ],
-            'value' => null
-        ];
-
-        // 2. Tính tổng thu nhập chịu thuế
-        $totalTaxableIncomeBeforeExemption = $grossSalary + $otherTaxableIncome;
-        $totalTaxableIncome = $totalTaxableIncomeBeforeExemption - $nonTaxableIncome;
-        $steps[] = [
-            'step' => 2,
-            'description' => 'Tổng thu nhập chịu thuế trong tháng (Lương Gross + Thu nhập khác chịu thuế - Thu nhập miễn thuế):',
-            'details' => [
-                number_format($grossSalary) . ' (Gross) + ' . number_format($otherTaxableIncome) . ' (Khác chịu thuế) - ' . number_format($nonTaxableIncome) . ' (Miễn thuế) = ' . number_format($totalTaxableIncome) . ' VNĐ'
-            ],
-            'value' => $totalTaxableIncome
-        ];
-
-        // 3. Tính các khoản đóng bảo hiểm bắt buộc
-        $socialInsuranceContribution = $this->calculateSocialInsuranceContribution($grossSalary, $declarationMonth);
-        $steps[] = [
-            'step' => 3,
-            'description' => 'Các khoản đóng bảo hiểm bắt buộc (phần người lao động đóng):',
-            'details' => [
-                'Tính trên lương Gross: ' . number_format($grossSalary) . ' VNĐ',
-                'Số tiền đóng BHXH, BHYT, BHTN: ' . number_format($socialInsuranceContribution) . ' VNĐ'
-            ],
-            'value' => $socialInsuranceContribution
-        ];
-
-        // 4. Tính giảm trừ bản thân
-        $personalDeduction = $personalDeductionAmount;
-        $steps[] = [
-            'step' => 4,
-            'description' => 'Khoản giảm trừ bản thân (cố định hàng tháng):',
-            'details' => [
-                number_format($personalDeduction) . ' VNĐ'
-            ],
-            'value' => $personalDeduction
-        ];
-
-        // 5. Tính giảm trừ người phụ thuộc
-        $validDependentsCount = $user->getValidDependentsCount($declarationMonth->year, $declarationMonth->month);
-        $dependentDeduction = $validDependentsCount * $dependentDeductionAmount;
-        $steps[] = [
-            'step' => 5,
-            'description' => 'Khoản giảm trừ người phụ thuộc:',
-            'details' => [
-                $validDependentsCount . ' (số người phụ thuộc hợp lệ) x ' . number_format($dependentDeductionAmount) . ' (mức giảm trừ/người) = ' . number_format($dependentDeduction) . ' VNĐ'
-            ],
-            'value' => $dependentDeduction
-        ];
-
-        // 6. Tính tổng các khoản giảm trừ
-        $totalDeduction = $this->calculateTotalDeductions(
-            $personalDeduction,
-            $dependentDeduction,
-            $socialInsuranceContribution,
-            $deductionCharity
-        );
-        $steps[] = [
-            'step' => 6,
-            'description' => 'Tổng các khoản giảm trừ (Bản thân + Người phụ thuộc + BH Bắt buộc + Từ thiện):',
-            'details' => [
-                number_format($personalDeduction) . ' + ' . number_format($dependentDeduction) . ' + ' . number_format($socialInsuranceContribution) . ' + ' . number_format($deductionCharity) . ' = ' . number_format($totalDeduction) . ' VNĐ'
-            ],
-            'value' => $totalDeduction
-        ];
-
-        // 7. Tính thu nhập tính thuế
-        $taxableIncome = max(0, $totalTaxableIncome - $totalDeduction);
-        $steps[] = [
-            'step' => 7,
-            'description' => 'Thu nhập tính thuế (Tổng thu nhập chịu thuế - Tổng giảm trừ):',
-            'details' => [
-                number_format($totalTaxableIncome) . ' - ' . number_format($totalDeduction) . ' = ' . number_format($taxableIncome) . ' VNĐ (Nếu nhỏ hơn 0 thì là 0 VNĐ)'
-            ],
-            'value' => $taxableIncome
-        ];
-
-        // 8. Áp dụng biểu thuế lũy tiến từng phần
-        $pitAmount = $this->calculatePIT($taxableIncome, $declarationMonth);
-        $taxBrackets = $this->getTaxBrackets($declarationMonth); // Lấy lại để hiển thị chi tiết
-        $remainingTaxableIncomeForBreakdown = $taxableIncome;
-        $taxCalculationBreakdown = [];
-
-        foreach ($taxBrackets as $bracket) {
-            if ($remainingTaxableIncomeForBreakdown <= 0) break;
-
-            $minIncomeOfBracket = $bracket->min_income;
-            $maxIncomeOfBracket = $bracket->max_income;
-            $taxRate = $bracket->tax_rate;
-
-            $upperBoundForCalculation = ($maxIncomeOfBracket !== null) ? $maxIncomeOfBracket : PHP_INT_MAX;
-            $lowerBoundForCalculation = ($minIncomeOfBracket > 0) ? ($minIncomeOfBracket - 1) : 0;
-
-            $incomeInThisBracket = min($remainingTaxableIncomeForBreakdown, $upperBoundForCalculation - $lowerBoundForCalculation);
-            $incomeInThisBracket = max(0, $incomeInThisBracket);
-
-            if ($incomeInThisBracket > 0) {
-                $taxInBracket = $incomeInThisBracket * $taxRate;
-                $annualTaxCalculationBreakdown[] = [
-                    'bracket' => ($maxIncomeOfBracket === null ? 'Từ ' . number_format($minIncomeOfBracket) . ' VNĐ trở lên' : number_format($minIncomeOfBracket) . ' - ' . number_format($maxIncomeOfBracket) . ' VNĐ'),
-                    'income_in_bracket' => number_format($incomeInThisBracket),
-                    'rate' => ($taxRate * 100) . '%',
-                    'tax_amount' => number_format($taxInBracket)
-                ];
-                $remainingTaxableIncomeForBreakdown -= $incomeInThisBracket;
-            }
-        }
-
-        $steps[] = [
-            'step' => 8,
-            'description' => 'Thuế TNCN phải nộp (áp dụng biểu thuế lũy tiến từng phần):',
-            'details' => $taxCalculationBreakdown,
-            'value' => $pitAmount
-        ];
-
-        // 9. Tính lương Net thực nhận
-        $netSalary = $grossSalary - $socialInsuranceContribution - $pitAmount;
-        $steps[] = [
-            'step' => 9,
-            'description' => 'Lương Net thực nhận (Lương Gross - Bảo hiểm bắt buộc - Thuế TNCN):',
-            'details' => [
-                number_format($grossSalary) . ' - ' . number_format($socialInsuranceContribution) . ' - ' . number_format($pitAmount) . ' = ' . number_format($netSalary) . ' VNĐ'
-            ],
-            'value' => $netSalary
-        ];
-
-        $results = [
-            'gross_salary' => $grossSalary,
-            'other_taxable_income' => $otherTaxableIncome,
-            'non_taxable_income' => $nonTaxableIncome,
-            'deduction_charity' => $deductionCharity,
-            'total_taxable_income' => $totalTaxableIncome,
-            'social_insurance_contribution' => $socialInsuranceContribution,
-            'personal_deduction' => $personalDeduction,
-            'dependent_deduction' => $dependentDeduction,
-            'total_deduction' => $totalDeduction,
-            'taxable_income' => $taxableIncome,
-            'pit_amount' => $pitAmount,
-            'net_salary' => $netSalary,
-        ];
-
-        if ($returnDetailedSteps) {
-            $results['steps'] = $steps;
-        }
-
-        return $results;
-    }
-
-    /**
-     * Tính toán quyết toán thuế TNCN cho cả năm.
-     * Tổng hợp dữ liệu từ các khai báo thu nhập hàng tháng và tính toán lại thuế cho cả năm.
-     *
-     * @param User $user Đối tượng người dùng
-     * @param int $year Năm cần quyết toán
-     * @param bool $returnDetailedSteps Nếu true, trả về chi tiết các bước tính toán
-     * @return array Kết quả quyết toán
-     */
-    public function calculateAnnualPIT(User $user, int $year, bool $returnDetailedSteps = false): array
+    private function calculateTaxInvestment(float $grossInvestmentIncome): float
     {
-        $steps = []; // Mảng lưu trữ các bước tính toán cho quyết toán năm
+        // Thuế suất 5% trên tổng thu nhập từ đầu tư
+        $taxRate = 0.05;
+        return round($grossInvestmentIncome * $taxRate, 0);
+    }
 
-        $startDate = Carbon::create($year, 1, 1)->startOfMonth();
-        $endDate = Carbon::create($year, 12, 31)->endOfMonth();
+    /**
+     * Calculates monthly tax based on provided income entry and its type.
+     *
+     * @param IncomeEntry $incomeEntry
+     * @return array
+     */
+    public function calculateMonthlyTax(IncomeEntry $incomeEntry): array
+    {
+        $grossIncome = $incomeEntry->gross_income;
+        $otherDeductions = $incomeEntry->other_deductions ?? 0;
+        $userId = $incomeEntry->user_id;
+        $incomeType = $incomeEntry->income_type;
 
-        // Lấy tất cả các khai báo thu nhập trong năm của người dùng
-        $declarations = $user->incomeDeclarations()
-                             ->whereBetween('declaration_month', [$startDate, $endDate])
-                             ->get();
+        $taxPaid = 0;
+        $bhxhDeduction = 0; // Khởi tạo
+        $personalDeduction = 0; // Khởi tạo
+        $dependentDeductionMonthly = 0; // Khởi tạo
+        $taxableIncome = 0; // Khởi tạo
 
-        // Khởi tạo các tổng cộng
-        $annualGrossSalary = $declarations->sum('gross_salary');
-        $annualOtherTaxableIncome = $declarations->sum('other_taxable_income');
-        $annualNonTaxableIncome = $declarations->sum('non_taxable_income');
-        $annualDeductionCharity = $declarations->sum('deduction_charity');
-        $annualSocialInsuranceContribution = $declarations->sum('social_insurance_contribution');
-        $annualTaxDeductedAtSource = $declarations->sum('tax_deducted_at_source'); // Thuế đã khấu trừ tại nguồn hàng tháng
+        switch ($incomeType) {
+            case 'salary':
+                // Giảm trừ bản thân
+                $personalDeduction = $this->taxParameters[self::PERSONAL_DEDUCTION_KEY];
 
-        // Nếu không có khai báo nào trong năm, trả về kết quả rỗng
-        if ($declarations->isEmpty()) {
-            return [
-                'year' => $year,
-                'annual_gross_salary' => 0,
-                'annual_other_taxable_income' => 0,
-                'annual_non_taxable_income' => 0,
-                'annual_deduction_charity' => 0,
-                'annual_total_taxable_income' => 0,
-                'annual_social_insurance_contribution' => 0,
-                'annual_personal_deduction' => 0,
-                'annual_dependent_deduction' => 0,
-                'annual_total_deduction' => 0,
-                'annual_taxable_income' => 0,
-                'annual_pit_amount' => 0,
-                'annual_tax_deducted_at_source' => 0,
-                'tax_to_pay_or_refund' => 0,
-                'status' => 'Không có dữ liệu khai báo cho năm ' . $year,
-                'steps' => $returnDetailedSteps ? [] : null,
-                'monthly_summaries' => [],
-                'annual_dependent_deduction_months_details' => [] // Thêm trường này
-            ];
+                // Tính BHXH, BHYT, BHTN
+                $bhxhRate = $this->taxParameters[self::SOCIAL_INSURANCE_RATE_KEY];
+                $bhxhCap = $this->taxParameters[self::MAX_SOCIAL_INSURANCE_KEY];
+                $bhxhSalary = min($grossIncome, $bhxhCap);
+                $bhxhDeduction = $bhxhSalary * $bhxhRate;
+
+                // Giảm trừ người phụ thuộc (tạm tính hàng tháng)
+                if ($userId) {
+                    $user = User::find($userId);
+                    if ($user) {
+                        // Lấy người phụ thuộc có trạng thái 'active' và đủ điều kiện trong tháng hiện tại
+                        $activeDependentsCount = $user->dependents()
+                            ->where('status', 'active')
+                            ->where(function ($query) use ($incomeEntry) {
+                                // Logic này hơi phức tạp nếu incomeEntry chỉ có tháng và năm
+                                // Giả sử registration_month và end_month là số tháng trong năm
+                                $query->where(function($q) use ($incomeEntry) {
+                                    $q->whereMonth('registration_date', '<=', $incomeEntry->month)
+                                      ->whereYear('registration_date', '<=', $incomeEntry->year);
+                                })->orWhereNull('registration_date'); // Coi như đăng ký trước đó
+
+                                $query->where(function($q) use ($incomeEntry) {
+                                    $q->whereMonth('deactivation_date', '>=', $incomeEntry->month)
+                                      ->whereYear('deactivation_date', '>=', $incomeEntry->year);
+                                })->orWhereNull('deactivation_date'); // Coi như chưa ngừng hiệu lực
+                            })
+                            ->count();
+                        $dependentDeductionMonthly = $activeDependentsCount * $this->taxParameters[self::DEPENDENT_DEDUCTION_KEY];
+                    }
+                }
+
+                // Tổng thu nhập chịu thuế
+                $assessableIncome = $grossIncome - $bhxhDeduction - $otherDeductions;
+                if ($assessableIncome < 0) $assessableIncome = 0;
+
+                // Thu nhập tính thuế (sau giảm trừ)
+                $taxableIncome = $assessableIncome - $personalDeduction - $dependentDeductionMonthly;
+                if ($taxableIncome < 0) $taxableIncome = 0;
+
+                // Tính thuế TNCN theo lũy tiến
+                $taxPaid = $this->calculateProgressiveTaxSalary($taxableIncome);
+                break;
+
+            case 'business':
+                // Đối với thu nhập kinh doanh, gross_income được xem là doanh thu.
+                // Thuế tính trên doanh thu theo tỷ lệ cố định (phương pháp khoán).
+                $taxPaid = $this->calculateTaxBusiness($grossIncome);
+                break;
+
+            case 'investment':
+                // Đối với thu nhập đầu tư, gross_income là tổng thu nhập đầu tư.
+                // Thuế tính trên tổng thu nhập theo tỷ lệ cố định.
+                $taxPaid = $this->calculateTaxInvestment($grossIncome);
+                break;
+
+            default:
+                Log::warning("Loại thu nhập không xác định: {$incomeType} cho mục nhập ID: {$incomeEntry->id}");
+                $taxPaid = 0;
+                break;
         }
 
-        $steps[] = [
-            'step' => 1,
-            'description' => 'Tổng hợp thu nhập và các khoản đã đóng/giảm trừ từ các khai báo hàng tháng trong năm:',
-            'details' => [
-                'Tổng lương Gross: ' . number_format($annualGrossSalary) . ' VNĐ',
-                'Tổng thu nhập khác chịu thuế: ' . number_format($annualOtherTaxableIncome) . ' VNĐ',
-                'Tổng thu nhập miễn thuế: ' . number_format($annualNonTaxableIncome) . ' VNĐ',
-                'Tổng đóng góp từ thiện: ' . number_format($annualDeductionCharity) . ' VNĐ',
-                'Tổng bảo hiểm bắt buộc đã đóng: ' . number_format($annualSocialInsuranceContribution) . ' VNĐ',
-                'Tổng thuế TNCN đã tạm nộp/khấu trừ tại nguồn: ' . number_format($annualTaxDeductedAtSource) . ' VNĐ',
-            ],
-            'value' => null
+        // Lương net ước tính
+        // Cần điều chỉnh logic net_income cho từng loại thu nhập nếu cần.
+        // Hiện tại, net_income là gross - các khoản trừ bắt buộc (BHXH nếu có) - thuế - các khoản trừ khác.
+        $netIncome = $grossIncome - $taxPaid - $bhxhDeduction - $otherDeductions;
+
+        return [
+            'gross_income' => round($grossIncome, 0),
+            'bhxh_deduction' => round($bhxhDeduction, 0), // BHXH chỉ áp dụng cho lương
+            'personal_deduction' => round($personalDeduction, 0), // Chỉ cho lương
+            'dependent_deduction' => round($dependentDeductionMonthly, 0), // Chỉ cho lương
+            'other_deductions' => round($otherDeductions, 0),
+            'assessable_income' => round($grossIncome - $bhxhDeduction - $otherDeductions, 0), // Thu nhập chịu thuế (tạm tính)
+            'taxable_income' => round($taxableIncome, 0), // Thu nhập tính thuế (tạm tính)
+            'tax_paid' => round($taxPaid, 0),
+            'net_income' => round($netIncome, 0),
+            'income_type' => $incomeType,
+
+            // Thêm các key để Seeder không lỗi
+            'actual_bhxh_deduction' => round($bhxhDeduction, 0),
+            'actual_tax_paid' => round($taxPaid, 0),
+            'actual_net_income' => round($netIncome, 0),
         ];
+    }
 
-        // 2. Tính tổng thu nhập chịu thuế cả năm
-        $annualTotalTaxableIncome = ($annualGrossSalary + $annualOtherTaxableIncome) - $annualNonTaxableIncome;
-        $steps[] = [
-            'step' => 2,
-            'description' => 'Tổng thu nhập chịu thuế cả năm (Tổng Gross + Tổng khác chịu thuế - Tổng miễn thuế):',
-            'details' => [
-                number_format($annualGrossSalary) . ' + ' . number_format($annualOtherTaxableIncome) . ' - ' . number_format($annualNonTaxableIncome) . ' = ' . number_format($annualTotalTaxableIncome) . ' VNĐ'
-            ],
-            'value' => $annualTotalTaxableIncome
-        ];
+    /**
+     * Calculates the yearly tax settlement for a user.
+     *
+     * @param User $user
+     * @param int $year
+     * @return array
+     */
+    public function calculateYearlyTaxSettlement(User $user, int $year): array
+    {
+        $totalSalaryGrossIncome = 0;
+        $totalBusinessGrossIncome = 0;
+        $totalInvestmentGrossIncome = 0;
+        $totalOtherGrossIncome = 0; // Để hứng các loại thu nhập khác không xử lý riêng
 
-        // 3. Tổng giảm trừ bản thân cả năm (luôn là 12 tháng)
-        $personalDeductionAmountPerMonth = $this->getSystemConfigValue('personal_deduction_amount', Carbon::createFromDate($year, 1, 1)) ?? 11000000;
-        $annualPersonalDeduction = $personalDeductionAmountPerMonth * 12;
-        $steps[] = [
-            'step' => 3,
-            'description' => 'Tổng giảm trừ bản thân cả năm (Mức giảm trừ bản thân * 12 tháng):',
-            'details' => [
-                number_format($personalDeductionAmountPerMonth) . ' VNĐ/tháng * 12 tháng = ' . number_format($annualPersonalDeduction) . ' VNĐ'
-            ],
-            'value' => $annualPersonalDeduction
-        ];
+        $totalSalaryBhxhDeduction = 0;
+        $totalSalaryOtherDeductions = 0; // Chỉ dành cho lương
+        $totalBusinessOtherDeductions = 0; // Dành cho kinh doanh nếu có
 
-        // 4. Tổng giảm trừ người phụ thuộc cả năm (theo số tháng thực tế có người phụ thuộc hợp lệ)
-        $dependentDeductionAmountPerMonth = $this->getSystemConfigValue('dependent_deduction_amount', Carbon::createFromDate($year, 1, 1)) ?? 4400000;
-        $annualDependentDeduction = 0;
-        $dependentMonthsDetails = []; // Chi tiết số tháng được giảm trừ của từng người phụ thuộc
-        $totalDependentMonths = 0;
+        $totalTaxPaidProvisionalForSalary = 0;
+        $totalTaxPaidProvisionalForBusiness = 0;
+        $totalTaxPaidProvisionalForInvestment = 0;
+        $totalTaxPaidProvisionalForOther = 0;
 
-        // Lấy số tháng hợp lệ cho từng người phụ thuộc trong năm
-        $dependentMonthsData = [];
-        foreach ($user->dependents as $dependent) {
-            $monthsCount = 0;
+        // Lấy tất cả các khoản thu nhập của người dùng trong năm
+        $incomeEntries = $user->incomeEntries()
+                              ->where('year', $year)
+                              ->get();
+
+        foreach ($incomeEntries as $entry) {
+            switch ($entry->income_type) {
+                case 'salary':
+                    $totalSalaryGrossIncome += $entry->gross_income;
+                    $totalSalaryBhxhDeduction += $entry->bhxh_deduction ?? 0;
+                    $totalSalaryOtherDeductions += $entry->other_deductions ?? 0;
+                    $totalTaxPaidProvisionalForSalary += $entry->tax_paid ?? 0;
+                    break;
+                case 'business':
+                    $totalBusinessGrossIncome += $entry->gross_income;
+                    $totalBusinessOtherDeductions += $entry->other_deductions ?? 0; // Chi phí hợp lệ từ kinh doanh
+                    $totalTaxPaidProvisionalForBusiness += $entry->tax_paid ?? 0;
+                    break;
+                case 'investment':
+                    $totalInvestmentGrossIncome += $entry->gross_income;
+                    $totalTaxPaidProvisionalForInvestment += $entry->tax_paid ?? 0;
+                    break;
+                default:
+                    $totalOtherGrossIncome += $entry->gross_income;
+                    $totalTaxPaidProvisionalForOther += $entry->tax_paid ?? 0;
+                    break;
+            }
+        }
+
+        // --- Bắt đầu tính toán cho thu nhập từ tiền lương, tiền công ---
+        // Giảm trừ bản thân cả năm
+        $personalDeductionYearly = $this->taxParameters[self::PERSONAL_DEDUCTION_KEY] * 12;
+
+        // Giảm trừ người phụ thuộc cả năm
+        $totalDependentDeductionYearly = 0;
+        $dependents = $user->dependents()->get();
+        $dependentMonthlyDeductionAmount = $this->taxParameters[self::DEPENDENT_DEDUCTION_KEY];
+
+        foreach ($dependents as $dependent) {
+            $monthsEligible = 0;
             for ($month = 1; $month <= 12; $month++) {
-                $currentMonthDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
-                if ($dependent->isValidForDeduction($currentMonthDate)) { // Sử dụng phương thức trong Dependent model
-                    $monthsCount++;
+                $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
+                $endOfMonth = Carbon::create($year, $month, 1)->endOfMonth();
+
+                // Người phụ thuộc phải có trạng thái 'active' trong khoảng thời gian có hiệu lực
+                // và ngày đăng ký phải trước hoặc trong tháng tính, ngày ngừng hiệu lực phải sau hoặc trong tháng tính
+                $isRegisteredBeforeEndOfMonth = $dependent->registration_date && $dependent->registration_date->lte($endOfMonth);
+                $isDeactivatedAfterStartOfMonth = ($dependent->deactivation_date === null) || ($dependent->deactivation_date && $dependent->deactivation_date->gte($startOfMonth));
+
+                if ($dependent->status === 'active' && $isRegisteredBeforeEndOfMonth && $isDeactivatedAfterStartOfMonth) {
+                    $monthsEligible++;
                 }
             }
-            if ($monthsCount > 0) {
-                $dependentMonthsData[] = [
-                    'name' => $dependent->full_name,
-                    'months' => $monthsCount,
-                    'amount' => $monthsCount * $dependentDeductionAmountPerMonth
-                ];
-                $totalDependentMonths += $monthsCount;
-                $annualDependentDeduction += ($monthsCount * $dependentDeductionAmountPerMonth);
-            }
+            $totalDependentDeductionYearly += ($monthsEligible * $dependentMonthlyDeductionAmount);
         }
 
-        $dependentDetails = ['Mức giảm trừ người phụ thuộc: ' . number_format($dependentDeductionAmountPerMonth) . ' VNĐ/người/tháng'];
-        foreach ($dependentMonthsData as $data) {
-            $dependentDetails[] = $data['name'] . ': ' . $data['months'] . ' tháng (' . number_format($data['amount']) . ' VNĐ)';
-        }
+        $totalPersonalDeductionsCombined = $personalDeductionYearly + $totalDependentDeductionYearly;
 
-        $steps[] = [
-            'step' => 4,
-            'description' => 'Tổng giảm trừ người phụ thuộc cả năm (Tổng số tháng có người phụ thuộc hợp lệ * Mức giảm trừ/người/tháng):',
-            'details' => $dependentDetails,
-            'value' => $annualDependentDeduction
-        ];
+        // Tổng thu nhập chịu thuế từ tiền lương (sau khi trừ BHXH, các khoản giảm khác từ lương)
+        $assessableIncomeSalary = $totalSalaryGrossIncome - $totalSalaryBhxhDeduction - $totalSalaryOtherDeductions;
+        if ($assessableIncomeSalary < 0) $assessableIncomeSalary = 0;
 
-        // 5. Tổng các khoản giảm trừ cả năm
-        $annualTotalDeduction = $annualPersonalDeduction
-                               + $annualDependentDeduction
-                               + $annualSocialInsuranceContribution
-                               + $annualDeductionCharity;
-        $steps[] = [
-            'step' => 5,
-            'description' => 'Tổng các khoản giảm trừ cả năm (Bản thân + Người phụ thuộc + BH Bắt buộc + Từ thiện):',
-            'details' => [
-                number_format($annualPersonalDeduction) . ' + ' . number_format($annualDependentDeduction) . ' + ' . number_format($annualSocialInsuranceContribution) . ' + ' . number_format($annualDeductionCharity) . ' = ' . number_format($annualTotalDeduction) . ' VNĐ'
-            ],
-            'value' => $annualTotalDeduction
-        ];
+        // Tổng thu nhập tính thuế từ tiền lương (sau khi trừ giảm trừ gia cảnh)
+        $totalTaxableIncomeSalary = $assessableIncomeSalary - $totalPersonalDeductionsCombined;
+        if ($totalTaxableIncomeSalary < 0) $totalTaxableIncomeSalary = 0;
 
-        // 6. Tính thu nhập tính thuế cả năm
-        $annualTaxableIncome = max(0, $annualTotalTaxableIncome - $annualTotalDeduction);
-        $steps[] = [
-            'step' => 6,
-            'description' => 'Thu nhập tính thuế cả năm (Tổng thu nhập chịu thuế cả năm - Tổng giảm trừ cả năm):',
-            'details' => [
-                number_format($annualTotalTaxableIncome) . ' - ' . number_format($annualTotalDeduction) . ' = ' . number_format($annualTaxableIncome) . ' VNĐ (Nếu nhỏ hơn 0 thì là 0 VNĐ)'
-            ],
-            'value' => $annualTaxableIncome
-        ];
+        // Tổng thuế phải nộp từ tiền lương theo lũy tiến
+        $totalTaxRequiredSalary = $this->calculateProgressiveTaxSalary($totalTaxableIncomeSalary);
+        // --- Kết thúc tính toán cho thu nhập từ tiền lương, tiền công ---
 
-        // 7. Áp dụng biểu thuế lũy tiến từng phần cho thu nhập tính thuế cả năm
-        $annualPitAmount = $this->calculatePIT($annualTaxableIncome, Carbon::createFromDate($year, 12, 31)); // Áp dụng biểu thuế của năm đó
-        $taxBrackets = $this->getTaxBrackets(Carbon::createFromDate($year, 12, 31)); // Lấy lại để hiển thị chi tiết
-        $remainingTaxableIncomeForAnnualBreakdown = $annualTaxableIncome;
-        $annualTaxCalculationBreakdown = [];
 
-        foreach ($taxBrackets as $bracket) {
-            if ($remainingTaxableIncomeForAnnualBreakdown <= 0) break;
+        // --- Tính toán cho thu nhập từ kinh doanh ---
+        // Thu nhập kinh doanh tính theo tỷ lệ trên doanh thu
+        // (Lưu ý: Nếu có 'other_deductions' cho kinh doanh, bạn có thể trừ chúng ở đây trước khi tính thuế)
+        $businessRevenueForTax = $totalBusinessGrossIncome - $totalBusinessOtherDeductions; // Giả sử other_deductions là chi phí hợp lệ
+        if ($businessRevenueForTax < 0) $businessRevenueForTax = 0;
+        $totalTaxRequiredBusiness = $this->calculateTaxBusiness($businessRevenueForTax);
+        // --- Kết thúc tính toán cho thu nhập từ kinh doanh ---
 
-            $minIncomeOfBracket = $bracket->min_income;
-            $maxIncomeOfBracket = $bracket->max_income;
-            $taxRate = $bracket->tax_rate;
 
-            $upperBoundForCalculation = ($maxIncomeOfBracket !== null) ? $maxIncomeOfBracket : PHP_INT_MAX;
-            $lowerBoundForCalculation = ($minIncomeOfBracket > 0) ? ($minIncomeOfBracket - 1) : 0;
+        // --- Tính toán cho thu nhập từ đầu tư ---
+        // Thu nhập đầu tư tính theo tỷ lệ trên tổng thu nhập đầu tư
+        $totalTaxRequiredInvestment = $this->calculateTaxInvestment($totalInvestmentGrossIncome);
+        // --- Kết thúc tính toán cho thu nhập từ đầu tư ---
 
-            $incomeInThisBracket = min($remainingTaxableIncomeForAnnualBreakdown, $upperBoundForCalculation - $lowerBoundForCalculation);
-            $incomeInThisBracket = max(0, $incomeInThisBracket);
+        // --- Tổng hợp quyết toán cuối cùng ---
+        // Tổng thu nhập tính thuế CHUNG cho quyết toán cuối năm (chỉ từ tiền lương, tiền công)
+        // Các loại thu nhập khác tính thuế riêng biệt và không cộng dồn vào TNCT để tính theo lũy tiến
+        $totalTaxableIncomeForSettlement = $totalTaxableIncomeSalary;
 
-            if ($incomeInThisBracket > 0) {
-                $taxInBracket = $incomeInThisBracket * $taxRate;
-                $annualTaxCalculationBreakdown[] = [
-                    'bracket' => ($maxIncomeOfBracket === null ? 'Từ ' . number_format($minIncomeOfBracket) . ' VNĐ trở lên' : number_format($minIncomeOfBracket) . ' - ' . number_format($maxIncomeOfBracket) . ' VNĐ'),
-                    'income_in_bracket' => number_format($incomeInThisBracket),
-                    'rate' => ($taxRate * 100) . '%',
-                    'tax_amount' => number_format($taxInBracket)
-                ];
-                $remainingTaxableIncomeForAnnualBreakdown -= $incomeInThisBracket;
-            }
-        }
+        // Tổng thuế phải nộp của tất cả các loại thu nhập
+        $totalTaxRequiredYearly = $totalTaxRequiredSalary + $totalTaxRequiredBusiness + $totalTaxRequiredInvestment + $totalTaxPaidProvisionalForOther; // Các loại khác coi như thuế đã nộp là thuế phải nộp
 
-        $steps[] = [
-            'step' => 7,
-            'description' => 'Thuế TNCN phải nộp cả năm (áp dụng biểu thuế lũy tiến từng phần cho thu nhập tính thuế cả năm):',
-            'details' => $annualTaxCalculationBreakdown,
-            'value' => $annualPitAmount
-        ];
+        // Tổng thuế đã tạm nộp của tất cả các loại thu nhập
+        $totalTaxPaidProvisionalOverall = $totalTaxPaidProvisionalForSalary + $totalTaxPaidProvisionalForBusiness + $totalTaxPaidProvisionalForInvestment + $totalTaxPaidProvisionalForOther;
 
-        // 8. Số thuế phải nộp thêm / được hoàn lại
-        $taxToPayOrRefund = $annualPitAmount - $annualTaxDeductedAtSource;
-        $status = '';
-        if ($taxToPayOrRefund > 0) {
-            $status = 'Phải nộp thêm';
-        } elseif ($taxToPayOrRefund < 0) {
-            $status = 'Được hoàn lại';
-        } else {
-            $status = 'Không phải nộp thêm / Không được hoàn lại';
-        }
-        $steps[] = [
-            'step' => 8,
-            'description' => 'Số thuế cần nộp thêm / được hoàn lại:',
-            'details' => [
-                number_format($annualPitAmount) . ' (Tổng thuế phải nộp cả năm) - ' . number_format($annualTaxDeductedAtSource) . ' (Tổng thuế đã tạm nộp) = ' . number_format($taxToPayOrRefund) . ' VNĐ',
-                'Trạng thái: ' . $status
-            ],
-            'value' => $taxToPayOrRefund
-        ];
+        // Số thuế còn phải nộp thêm hoặc được hoàn lại
+        $taxToPayOrRefund = $totalTaxRequiredYearly - $totalTaxPaidProvisionalOverall;
 
-        // Tóm tắt các khai báo hàng tháng để hiển thị trong báo cáo quyết toán
-        $monthlySummaries = $declarations->map(function($declaration) {
-            return [
-                'month' => $declaration->declaration_month->format('m/Y'),
-                'gross_salary' => $declaration->gross_salary,
-                'other_taxable_income' => $declaration->other_taxable_income,
-                'non_taxable_income' => $declaration->non_taxable_income,
-                'deduction_charity' => $declaration->deduction_charity,
-                'tax_deducted_at_source' => $declaration->tax_deducted_at_source,
-                'social_insurance_contribution' => $declaration->social_insurance_contribution,
-                'personal_deduction' => $declaration->personal_deduction,
-                'dependent_deduction' => $declaration->dependent_deduction,
-                'total_deduction' => $declaration->total_deduction,
-                'taxable_income' => $declaration->taxable_income,
-                'calculated_tax' => $declaration->calculated_tax,
-                'net_salary' => $declaration->net_salary,
-            ];
-        })->toArray();
 
-        $results = [
+        return [
             'year' => $year,
-            'annual_gross_salary' => $annualGrossSalary,
-            'annual_other_taxable_income' => $annualOtherTaxableIncome,
-            'annual_non_taxable_income' => $annualNonTaxableIncome,
-            'annual_deduction_charity' => $annualDeductionCharity,
-            'annual_total_taxable_income' => $annualTotalTaxableIncome,
-            'annual_social_insurance_contribution' => $annualSocialInsuranceContribution,
-            'annual_personal_deduction' => $annualPersonalDeduction,
-            'annual_dependent_deduction' => $annualDependentDeduction,
-            'annual_total_deduction' => $annualTotalDeduction,
-            'annual_taxable_income' => $annualTaxableIncome,
-            'annual_pit_amount' => $annualPitAmount,
-            'annual_tax_deducted_at_source' => $annualTaxDeductedAtSource,
-            'tax_to_pay_or_refund' => $taxToPayOrRefund,
-            'status' => $status,
-            'monthly_summaries' => $monthlySummaries,
-            'annual_dependent_deduction_months_details' => array_column($dependentMonthsData, 'months', 'name') // Chi tiết số tháng của từng người phụ thuộc
-        ];
+            // Tổng hợp chung
+            'total_gross_income' => round($totalSalaryGrossIncome + $totalBusinessGrossIncome + $totalInvestmentGrossIncome + $totalOtherGrossIncome, 0),
+            'total_bhxh_deduction' => round($totalSalaryBhxhDeduction, 0), // Chỉ BHXH từ lương
+            'total_other_deductions' => round($totalSalaryOtherDeductions + $totalBusinessOtherDeductions, 0), // Tổng các giảm trừ khác từ lương và kinh doanh
 
-        if ($returnDetailedSteps) {
-            $results['steps'] = $steps;
+            // Các khoản giảm trừ gia cảnh (chỉ áp dụng cho thu nhập từ lương, tiền công)
+            'total_personal_deductions' => round($totalPersonalDeductionsCombined, 0),
+
+            // Thu nhập tính thuế cho quyết toán cuối năm (chỉ từ lương)
+            'total_taxable_income_yearly' => round($totalTaxableIncomeForSettlement, 0), // **ĐÃ THÊM KEY NÀY!**
+
+            // Tổng thuế đã tạm nộp các loại
+            'total_tax_paid_provisional' => round($totalTaxPaidProvisionalOverall, 0),
+
+            // Tổng thuế phải nộp của tất cả các loại thu nhập
+            'total_tax_required_yearly' => round($totalTaxRequiredYearly, 0),
+
+            // Số thuế còn phải nộp hoặc được hoàn lại
+            'tax_to_pay_or_refund' => round($taxToPayOrRefund, 0),
+
+            // Chi tiết theo từng loại thu nhập (có thể hữu ích cho báo cáo chi tiết)
+            'breakdown' => [
+                'salary' => [
+                    'gross_income' => round($totalSalaryGrossIncome, 0),
+                    'assessable_income' => round($assessableIncomeSalary, 0),
+                    'taxable_income' => round($totalTaxableIncomeSalary, 0),
+                    'tax_required' => round($totalTaxRequiredSalary, 0),
+                    'tax_paid_provisional' => round($totalTaxPaidProvisionalForSalary, 0),
+                ],
+                'business' => [
+                    'gross_income' => round($totalBusinessGrossIncome, 0),
+                    'tax_required' => round($totalTaxRequiredBusiness, 0),
+                    'tax_paid_provisional' => round($totalTaxPaidProvisionalForBusiness, 0),
+                ],
+                'investment' => [
+                    'gross_income' => round($totalInvestmentGrossIncome, 0),
+                    'tax_required' => round($totalTaxRequiredInvestment, 0),
+                    'tax_paid_provisional' => round($totalTaxPaidProvisionalForInvestment, 0),
+                ],
+            ]
+        ];
+    }
+
+    /**
+     * Tính toán tổng thu nhập và thuế của user tại một công ty trong một năm.
+     *
+     * @param User $user
+     * @param int $year
+     * @param int $companyId
+     * @return array
+     */
+    public function calculateCompanyYearlyTax(User $user, int $year, int $companyId): array
+    {
+        $incomeEntries = $user->incomeEntries()
+            ->where('year', $year)
+            ->where('income_source_id', $companyId)
+            ->get();
+
+        $totalGrossIncome = 0;
+        $totalTaxPaid = 0;
+        $totalBhxhDeduction = 0;
+        $totalOtherDeductions = 0;
+
+        foreach ($incomeEntries as $entry) {
+            $totalGrossIncome += $entry->gross_income;
+            $totalTaxPaid += $entry->tax_paid ?? 0;
+            $totalBhxhDeduction += $entry->bhxh_deduction ?? 0;
+            $totalOtherDeductions += $entry->other_deductions ?? 0;
         }
 
-        return $results;
+        return [
+            'total_gross_income' => round($totalGrossIncome, 0),
+            'total_tax_paid' => round($totalTaxPaid, 0),
+            'total_bhxh_deduction' => round($totalBhxhDeduction, 0),
+            'total_other_deductions' => round($totalOtherDeductions, 0),
+            // Có thể bổ sung các trường khác nếu cần
+        ];
     }
 }

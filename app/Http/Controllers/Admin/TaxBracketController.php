@@ -3,90 +3,83 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\TaxBracket; // Make sure this is imported
+use App\Models\TaxBracket;
 use Illuminate\Http\Request;
-use Carbon\Carbon; // Make sure this is imported
+use Illuminate\Validation\Rule;
 
 class TaxBracketController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the tax brackets.
      */
     public function index()
     {
-        // Get all tax brackets, ordered by effective date and then by min_income
-        $taxBrackets = TaxBracket::orderBy('effective_date', 'desc')
-                                 ->orderBy('min_income', 'asc')
-                                 ->get();
-
-        return view('admin.tax_brackets.index', compact('taxBrackets'));
+        $taxBrackets = TaxBracket::orderBy('level')->get();
+        return view('admin.tax-brackets.index', compact('taxBrackets'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new tax bracket.
      */
     public function create()
     {
-        // Pass a new TaxBracket instance to the view to avoid null errors
-        return view('admin.tax_brackets.create', ['taxBracket' => new TaxBracket()]);
+        return view('admin.tax-brackets.create');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created tax bracket in storage.
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'level' => ['required', 'integer', 'min:1', 'unique:tax_brackets,level,NULL,id,effective_date,' . $request->effective_date], // Ensure level is unique for a given effective_date
-            'min_income' => ['required', 'numeric', 'min:0'],
-            'max_income' => ['nullable', 'numeric', 'gt:min_income'], // Max income must be greater than min income
-            'tax_rate' => ['required', 'numeric', 'min:0', 'max:1'], // Tax rate between 0 and 1
-            'description' => ['nullable', 'string', 'max:1000'],
-            'effective_date' => ['required', 'date'],
+        $validatedData = $request->validate([
+            'level' => 'required|integer|min:1|unique:tax_brackets,level',
+            'income_from' => 'required|numeric|min:0',
+            'income_to' => 'nullable|numeric|gt:income_from', // income_to có thể null (bậc cuối), nhưng nếu có thì phải lớn hơn income_from
+            'tax_rate' => 'required|numeric|min:0|max:1', // Tỷ lệ từ 0 đến 1 (ví dụ 0.05 cho 5%)
+        ], [
+            'level.unique' => 'Cấp độ này đã tồn tại.',
+            'income_to.gt' => 'Thu nhập đến phải lớn hơn thu nhập từ.',
         ]);
 
-        TaxBracket::create($validated);
+        TaxBracket::create($validatedData);
 
-        return redirect()->route('admin.tax_brackets.index')->with('success', 'Bậc thuế đã được thêm thành công.');
+        return redirect()->route('admin.tax-brackets.index')->with('success', 'Bậc thuế đã được thêm thành công.');
     }
 
-    // The 'show' method is typically excluded for tax brackets, as per previous instructions.
-
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing the specified tax bracket.
      */
     public function edit(TaxBracket $taxBracket)
     {
-        // Laravel's Route Model Binding automatically finds the TaxBracket or throws a 404.
-        return view('admin.tax_brackets.edit', compact('taxBracket'));
+        return view('admin.tax-brackets.edit', compact('taxBracket'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified tax bracket in storage.
      */
     public function update(Request $request, TaxBracket $taxBracket)
     {
-        $validated = $request->validate([
-            // Level uniqueness check: ensure it's unique for a given effective_date, ignoring current record
-            'level' => ['required', 'integer', 'min:1', 'unique:tax_brackets,level,' . $taxBracket->id . ',id,effective_date,' . $request->effective_date],
-            'min_income' => ['required', 'numeric', 'min:0'],
-            'max_income' => ['nullable', 'numeric', 'gt:min_income'],
-            'tax_rate' => ['required', 'numeric', 'min:0', 'max:1'],
-            'description' => ['nullable', 'string', 'max:1000'],
-            'effective_date' => ['required', 'date'],
+        $validatedData = $request->validate([
+            'level' => ['required', 'integer', 'min:1', Rule::unique('tax_brackets')->ignore($taxBracket->id)],
+            'income_from' => 'required|numeric|min:0',
+            'income_to' => 'nullable|numeric|gt:income_from',
+            'tax_rate' => 'required|numeric|min:0|max:1',
+        ], [
+            'level.unique' => 'Cấp độ này đã tồn tại.',
+            'income_to.gt' => 'Thu nhập đến phải lớn hơn thu nhập từ.',
         ]);
 
-        $taxBracket->update($validated);
+        $taxBracket->update($validatedData);
 
-        return redirect()->route('admin.tax_brackets.index')->with('success', 'Bậc thuế đã được cập nhật thành công.');
+        return redirect()->route('admin.tax-brackets.index')->with('success', 'Bậc thuế đã được cập nhật thành công.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified tax bracket from storage.
      */
     public function destroy(TaxBracket $taxBracket)
     {
         $taxBracket->delete();
-        return redirect()->route('admin.tax_brackets.index')->with('success', 'Bậc thuế đã được xóa thành công.');
+        return redirect()->route('admin.tax-brackets.index')->with('success', 'Bậc thuế đã được xóa thành công.');
     }
 }

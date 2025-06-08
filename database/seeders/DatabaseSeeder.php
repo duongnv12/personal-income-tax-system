@@ -1,10 +1,14 @@
 <?php
 
 namespace Database\Seeders;
+use Illuminate\Support\Facades\DB;
+
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Services\TaxCalculationService; // Import service
+
+
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,17 +17,42 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Có thể tạo một người dùng mẫu (nếu chưa có)
-        User::factory()->create([
+        // // Tắt kiểm tra khóa ngoại
+        // DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
+        // // Nếu bạn muốn truncate bảng users (thường không cần khi dùng migrate:fresh)
+        // // User::truncate(); // Có thể bỏ qua nếu bạn dùng migrate:fresh
+        User::where('email', 'user@example.com')->delete();
+
+
+        $user = User::factory()->create([
             'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => bcrypt('password'),
-            'is_admin' => true, // Gán user này làm admin
+            'email' => 'user@example.com',
+            'password' => bcrypt('password'), // Mật khẩu mẫu
+            'tax_code' => '0123456789', // Mã số thuế mẫu
+            'address' => 'Sông Công, Thái Nguyên', // Địa chỉ mẫu
+            'phone_number' => '0987654321', // Số điện thoại mẫu
         ]);
 
         $this->call([
-            SystemConfigSeeder::class,
-            TaxBracketSeeder::class,
+            AdminUserSeeder::class, // Tạo tài khoản admin
+            TaxParameterSeeder::class, // Đảm bảo TaxParameterSeeder chạy trước
+            TaxBracketSeeder::class, // Đảm bảo TaxBracketSeeder chạy trước
+            IncomeSourceSeeder::class,
+            DependentSeeder::class, // Gọi seeder Người phụ thuộc
+            IncomeEntrySeeder::class, // Gọi seeder Khoản thu nhập
         ]);
+
+        // // REFRESH the TaxCalculationService instance
+        // // This ensures the service reloads parameters and brackets from the DB AFTER seeders ran
+        // app()->forgetInstance(TaxCalculationService::class);
+        // app()->make(TaxCalculationService::class);
+
+        $this->call([
+
+        ]);
+
+        // // Bật lại kiểm tra khóa ngoại
+        // DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
 }

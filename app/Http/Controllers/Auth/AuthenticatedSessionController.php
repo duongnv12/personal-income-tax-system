@@ -6,8 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // Đảm bảo dòng này có
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use App\Models\User; // <-- Đảm bảo đã import Model User
 
 class AuthenticatedSessionController extends Controller
 {
@@ -28,12 +29,17 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // Logic điều hướng tùy thuộc vào vai trò người dùng
-        if (Auth::user()->is_admin) {
-            return redirect()->intended(route('admin.dashboard', absolute: false));
-        }
+        // Lấy thông tin người dùng đã đăng nhập
+        $user = Auth::user();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Kiểm tra vai trò của người dùng và chuyển hướng
+        if ($user && $user->isAdmin()) {
+            // Nếu là Admin, chuyển hướng đến trang dashboard admin (hoặc trang cấu hình thuế)
+            return redirect()->intended(route('admin.dashboard')); // Hoặc một route admin dashboard khác bạn tạo
+        } else {
+            // Nếu là người dùng thông thường, chuyển hướng đến trang tính thuế
+            return redirect()->intended(route('dashboard')); // Trang tính thuế của user
+        }
     }
 
     /**
