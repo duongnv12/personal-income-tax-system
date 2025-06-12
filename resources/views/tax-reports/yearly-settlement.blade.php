@@ -15,22 +15,20 @@
                             Quyết toán thuế TNCN năm <span class="text-blue-700">{{ $selectedYear }}</span>
                         </h3>
                         <div class="flex flex-col md:flex-row items-center space-y-3 md:space-y-0 md:space-x-4">
-                            <div class="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-lg shadow-sm border border-blue-100">
-                                <label for="report_year" class="text-gray-700 font-semibold flex items-center">
-                                    <i class="fa-solid fa-calendar-alt mr-2 text-blue-500"></i> Năm:
-                                </label>
-                                <select id="report_year"
-                                    onchange="window.location.href = this.value"
-                                    class="appearance-none border-blue-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm text-base py-2 px-3 bg-white font-semibold text-blue-700 transition"
-                                    style="background-image: none;">
-                                    @foreach ($availableYears as $year)
-                                        <option value="{{ route('tax.yearly_settlement', $year) }}"
-                                            {{ $year == $selectedYear ? 'selected' : '' }}>
-                                            {{ $year }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
+                            <label for="report_year" class="text-gray-700 font-semibold flex items-center mr-2">
+                                <i class="fa-solid fa-calendar-alt mr-2 text-blue-500"></i> Năm:
+                            </label>
+                            <select id="report_year"
+                                onchange="window.location.href = this.value"
+                                class="border border-blue-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm text-base py-1 px-3 bg-white font-semibold text-blue-700 transition mr-2"
+                                style="background-image: none; min-width: 100px;">
+                                @foreach ($availableYears as $year)
+                                    <option value="{{ route('tax.yearly_settlement', $year) }}"
+                                        {{ $year == $selectedYear ? 'selected' : '' }}>
+                                        {{ $year }}
+                                    </option>
+                                @endforeach
+                            </select>
                             <a href="{{ route('tax.yearly_settlement.export_pdf', $selectedYear) }}"
                             class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
                                 <i class="fa-solid fa-file-pdf mr-2"></i> Xuất PDF

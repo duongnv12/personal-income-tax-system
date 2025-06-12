@@ -1,31 +1,31 @@
 <x-guest-layout>
-    <form method="POST" action="{{ route('register') }}">
+    <form method="POST" action="{{ route('register') }}" class="space-y-6">
         @csrf
 
         <!-- Name -->
         <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
-            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+            <x-input-label for="name" :value="__('Tên của bạn')" class="block text-sm font-medium text-gray-700" />
+            <x-text-input id="name" class="block mt-2 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition duration-150 ease-in-out" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" placeholder="John Doe" />
+            <x-input-error :messages="$errors->get('name')" class="mt-2 text-sm text-red-600" />
         </div>
 
         <!-- Email Address -->
         <div class="mt-4">
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            <x-input-label for="email" :value="__('Địa chỉ Email')" class="block text-sm font-medium text-gray-700" />
+            <x-text-input id="email" class="block mt-2 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition duration-150 ease-in-out" type="email" name="email" :value="old('email')" required autocomplete="username" placeholder="name@example.com" />
+            <x-input-error :messages="$errors->get('email')" class="mt-2 text-sm text-red-600" />
         </div>
 
         <!-- Password -->
         <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-            <div class="relative">
-                <x-text-input id="password" class="block mt-1 w-full pr-10"
+            <x-input-label for="password" :value="__('Mật khẩu')" class="block text-sm font-medium text-gray-700" />
+            <div class="relative mt-2">
+                <x-text-input id="password" class="block w-full pr-10 rounded-md shadow-sm border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition duration-150 ease-in-out"
                                 type="password"
                                 name="password"
-                                required autocomplete="new-password" />
+                                required autocomplete="new-password" placeholder="••••••••" />
                 <button type="button" aria-label="Hiện/Ẩn mật khẩu" onclick="togglePassword('password', this)"
-                    class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-indigo-600 transition-colors">
+                    class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-indigo-600 focus:outline-none focus:text-indigo-600 transition-colors duration-200">
                     <svg id="eye-password" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 eye-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path class="eye-open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -36,18 +36,18 @@
                     </svg>
                 </button>
             </div>
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+            <x-input-error :messages="$errors->get('password')" class="mt-2 text-sm text-red-600" />
         </div>
 
         <!-- Confirm Password -->
         <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-            <div class="relative">
-                <x-text-input id="password_confirmation" class="block mt-1 w-full pr-10"
+            <x-input-label for="password_confirmation" :value="__('Xác nhận mật khẩu')" class="block text-sm font-medium text-gray-700" />
+            <div class="relative mt-2">
+                <x-text-input id="password_confirmation" class="block w-full pr-10 rounded-md shadow-sm border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition duration-150 ease-in-out"
                                 type="password"
-                                name="password_confirmation" required autocomplete="new-password" />
+                                name="password_confirmation" required autocomplete="new-password" placeholder="••••••••" />
                 <button type="button" aria-label="Hiện/Ẩn mật khẩu" onclick="togglePassword('password_confirmation', this)"
-                    class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-indigo-600 transition-colors">
+                    class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-indigo-600 focus:outline-none focus:text-indigo-600 transition-colors duration-200">
                     <svg id="eye-password_confirmation" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 eye-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path class="eye-open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -58,16 +58,17 @@
                     </svg>
                 </button>
             </div>
-            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2 text-sm text-red-600" />
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
-                {{ __('Already registered?') }}
+        <div class="flex items-center justify-end mt-6">
+            <a class="underline text-sm text-indigo-600 hover:text-indigo-800 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200" href="{{ route('login') }}">
+                {{ __('Đã có tài khoản?') }}
             </a>
 
-            <x-primary-button class="ms-4">
-                {{ __('Register') }}
+            {{-- Updated Primary Button style --}}
+            <x-primary-button class="ms-4 inline-flex items-center px-8 py-4 bg-indigo-600 border border-transparent rounded-full font-bold text-base text-white uppercase tracking-wider hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-4 ring-indigo-300 transition ease-in-out duration-300 shadow-xl transform hover:scale-105">
+                <i class="fa-solid fa-user-plus mr-2"></i> {{ __('Đăng ký') }}
             </x-primary-button>
         </div>
     </form>

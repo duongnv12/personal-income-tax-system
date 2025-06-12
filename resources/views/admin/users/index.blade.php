@@ -1,93 +1,113 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
-            {{ __('Quản lý Người dùng') }}
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            <i class="fa-solid fa-users-cog mr-2 text-indigo-600"></i> {{ __('Quản lý Người Dùng') }}
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                <div class="p-6 sm:p-8 text-gray-900">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-bold text-gray-800">Danh sách Người dùng</h3>
-                        {{-- Nút Thêm Người dùng mới --}}
-                        <a href="{{ route('register') }}" class="inline-flex items-center px-5 py-2.5 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                            {{ __('Thêm Người dùng mới') }}
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-100 transform hover:scale-[1.005] transition-all duration-300">
+                <div class="p-6 text-gray-900">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b pb-4">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4 md:mb-0">
+                            <i class="fa-solid fa-user-friends mr-2 text-green-600"></i> Danh sách Người Dùng
+                        </h3>
+                        <a href="{{ route('admin.users.create') }}"
+                           class="inline-flex items-center px-5 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
+                            <i class="fa-solid fa-user-plus mr-2"></i> {{ __('Thêm Người dùng mới') }}
                         </a>
                     </div>
 
-                    {{-- Thông báo thành công --}}
+                    {{-- Thông báo session: Thành công --}}
                     @if (session('success'))
-                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
-                            <strong class="font-bold">Thành công!</strong>
-                            <span class="block sm:inline">{{ session('success') }}</span>
-                            <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
-                                <svg class="fill-current h-6 w-6 text-green-500 cursor-pointer" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" onclick="this.parentElement.parentElement.style.display='none';"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
-                            </span>
+                        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md" role="alert">
+                            <p class="font-bold">Thành công!</p>
+                            <p>{{ session('success') }}</p>
                         </div>
                     @endif
-                    {{-- Thông báo lỗi --}}
+
+                    {{-- Thông báo session: Lỗi (thêm mới) --}}
                     @if (session('error'))
-                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
-                            <strong class="font-bold">Lỗi!</strong>
-                            <span class="block sm:inline">{{ session('error') }}</span>
-                            <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
-                                <svg class="fill-current h-6 w-6 text-red-500 cursor-pointer" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" onclick="this.parentElement.parentElement.style.display='none';"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
-                            </span>
+                        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md" role="alert">
+                            <p class="font-bold">Lỗi!</p>
+                            <p>{{ session('error') }}</p>
                         </div>
                     @endif
 
                     @if ($users->isEmpty())
-                        <div class="text-center py-10">
-                            <p class="text-lg text-gray-600 mb-4">Chưa có người dùng nào được đăng ký.</p>
-                            <a href="{{ route('register') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                {{ __('Đăng ký người dùng đầu tiên') }}
-                            </a>
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded-md" role="alert">
+                            <p class="font-bold">Không có dữ liệu!</p>
+                            <p>Hiện không có người dùng nào khác để quản lý. Hãy thêm người dùng mới.</p>
                         </div>
                     @else
-                        <div class="overflow-x-auto rounded-lg shadow-sm border border-gray-200">
+                        {{-- Bảng danh sách người dùng với style tương tự bảng nguồn thu nhập --}}
+                        <div class="overflow-x-auto shadow-md rounded-lg border border-gray-200">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-100">
                                     <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">ID</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Tên</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Email</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Admin</th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Thao tác</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tên</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Quyền</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái Email</th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     @foreach ($users as $user)
                                         <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $user->id }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $user->name }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $user->email }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                @if ($user->is_admin)
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                        Có
+                                            <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ $user->name }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ $user->email }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-gray-700">
+                                                @if($user->is_admin)
+                                                    <span class="inline-flex items-center px-2 py-0.5 text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                                        <i class="fa-solid fa-user-tie mr-1"></i> Quản trị viên
                                                     </span>
                                                 @else
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                                        Không
+                                                    <span class="inline-flex items-center px-2 py-0.5 text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                                                        <i class="fa-solid fa-user mr-1"></i> Người dùng
+                                                    </span>
+                                                @endif
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-gray-700">
+                                                @if($user->hasVerifiedEmail())
+                                                    <span class="inline-flex items-center px-2 py-0.5 text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                        <i class="fa-solid fa-check-circle mr-1"></i> Đã xác minh
+                                                    </span>
+                                                @else
+                                                    <span class="inline-flex items-center px-2 py-0.5 text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                                                        <i class="fa-solid fa-exclamation-triangle mr-1"></i> Chưa xác minh
                                                     </span>
                                                 @endif
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <a href="{{ route('admin.users.edit', $user) }}" class="text-indigo-600 hover:text-indigo-900 mr-4 transition duration-150 ease-in-out">Sửa</a>
-                                                <form action="{{ route('admin.users.destroy', $user) }}" method="POST" class="inline-block" onsubmit="return confirm('Bạn có chắc chắn muốn xóa người dùng này và tất cả dữ liệu liên quan? Hành động này không thể hoàn tác.');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-900 transition duration-150 ease-in-out">Xóa</button>
-                                                </form>
+                                                {{-- Kiểm tra để không hiển thị nút sửa/xóa cho tài khoản đang đăng nhập --}}
+                                                @if ($user->id !== Auth::id())
+                                                    {{-- Nút Sửa --}}
+                                                    <a href="{{ route('admin.users.edit', $user) }}" class="text-indigo-600 hover:text-indigo-900 mr-4 inline-flex items-center">
+                                                        <i class="fa-solid fa-edit mr-1"></i> Sửa
+                                                    </a>
+                                                    {{-- Nút Xóa với xác nhận --}}
+                                                    <form action="{{ route('admin.users.destroy', $user) }}" method="POST" class="inline-block" onsubmit="return confirm('Bạn có chắc chắn muốn xóa người dùng này? Hành động này không thể hoàn tác.');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="text-red-600 hover:text-red-900 inline-flex items-center">
+                                                            <i class="fa-solid fa-trash-alt mr-1"></i> Xóa
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    {{-- Có thể hiển thị một thông báo hoặc để trống --}}
+                                                    <span class="text-gray-500 italic">Tài khoản của bạn</span>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
                         </div>
+                        {{-- Phần phân trang --}}
                         <div class="mt-6">
                             {{ $users->links() }}
                         </div>

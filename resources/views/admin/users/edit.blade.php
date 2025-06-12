@@ -1,54 +1,62 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
-            {{ __('Chỉnh sửa Người dùng') }}
+        {{-- Đồng bộ header với icon và màu sắc --}}
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            <i class="fa-solid fa-user-edit mr-2 text-purple-600"></i> {{ __('Chỉnh sửa Người dùng') }}
         </h2>
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-md mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                <div class="p-6 sm:p-8 text-gray-900">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            {{-- Container chính với shadow-xl, bo góc và hiệu ứng hover --}}
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-100 transform hover:scale-[1.005] transition-all duration-300">
+                <div class="p-6 text-gray-900">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center border-b pb-4">
+                        <i class="fa-solid fa-user-edit mr-2 text-purple-600"></i> Chỉnh sửa Thông tin Người dùng
+                    </h3>
                     <form method="POST" action="{{ route('admin.users.update', $user) }}">
                         @csrf
                         @method('PATCH')
 
-                        <div class="space-y-6"> {{-- Dùng space-y để tạo khoảng cách giữa các trường --}}
+                        <div class="space-y-6">
                             <div>
-                                <x-input-label for="name" :value="__('Tên')" />
-                                <x-text-input id="name" name="name" type="text" class="mt-1 block w-full focus:ring-indigo-500 focus:border-indigo-500" :value="old('name', $user->name)" required autofocus />
+                                <x-input-label for="name" :value="__('Tên người dùng')" />
+                                <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
                                 <x-input-error class="mt-2" :messages="$errors->get('name')" />
                             </div>
 
                             <div>
-                                <x-input-label for="email" :value="__('Email')" />
-                                <x-text-input id="email" name="email" type="email" class="mt-1 block w-full focus:ring-indigo-500 focus:border-indigo-500" :value="old('email', $user->email)" required />
+                                <x-input-label for="email" :value="__('Địa chỉ Email')" />
+                                <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
                                 <x-input-error class="mt-2" :messages="$errors->get('email')" />
                             </div>
 
-                            <div class="flex items-center mt-4">
-                                <input type="checkbox" id="is_admin" name="is_admin" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" {{ $user->is_admin ? 'checked' : '' }}>
-                                <x-input-label for="is_admin" class="ml-2 text-base" :value="__('Là Admin')" /> {{-- Tăng kích thước font cho label checkbox --}}
+                            <div class="flex items-center pt-2">
+                                {{-- Checked status dựa trên giá trị hiện tại của $user->is_admin --}}
+                                <input type="checkbox" id="is_admin" name="is_admin" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 w-5 h-5" {{ old('is_admin', $user->is_admin) ? 'checked' : '' }}>
+                                <x-input-label for="is_admin" class="ml-3 text-base font-medium text-gray-700" :value="__('Là Admin')" />
                                 <x-input-error class="mt-2" :messages="$errors->get('is_admin')" />
                             </div>
 
-                            <div class="mt-4">
+                            <div class="pt-2">
                                 <x-input-label for="password" :value="__('Mật khẩu mới (để trống nếu không muốn đổi)')" />
-                                <x-text-input id="password" name="password" type="password" class="mt-1 block w-full focus:ring-indigo-500 focus:border-indigo-500" autocomplete="new-password" />
+                                <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" autocomplete="new-password" />
                                 <x-input-error class="mt-2" :messages="$errors->get('password')" />
                             </div>
 
-                            <div class="mt-4">
+                            <div>
                                 <x-input-label for="password_confirmation" :value="__('Xác nhận mật khẩu mới')" />
-                                <x-text-input id="password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full focus:ring-indigo-500 focus:border-indigo-500" autocomplete="new-password" />
+                                <x-text-input id="password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full" autocomplete="new-password" />
                                 <x-input-error class="mt-2" :messages="$errors->get('password_confirmation')" />
                             </div>
-                        </div> {{-- Kết thúc space-y-6 --}}
+                        </div>
 
                         <div class="flex items-center justify-end mt-8">
-                            <x-primary-button class="ml-4 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500 shadow-md">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                                {{ __('Cập nhật') }}
+                            <a href="{{ route('admin.users.index') }}" class="inline-flex items-center px-5 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm mr-4">
+                                <i class="fa-solid fa-ban mr-2"></i> {{ __('Hủy') }}
+                            </a>
+                            <x-primary-button class="px-5 py-2 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 shadow-md">
+                                <i class="fa-solid fa-save mr-2"></i> {{ __('Cập nhật Người dùng') }}
                             </x-primary-button>
                         </div>
                     </form>

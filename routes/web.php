@@ -45,9 +45,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     // Quản lý người dùng
-    Route::resource('users', UserController::class)->except(['create', 'store']); // Chỉ cho xem, sửa, xóa
-    Route::get('/admin/users/create', [App\Http\Controllers\Admin\UserController::class, 'create'])->name('admin.users.create');
-    Route::post('/admin/users', [UserController::class, 'store'])->name('admin.users.store');
+    Route::resource('users', UserController::class); // Không cần except
 
     // Quản lý tham số thuế
     Route::resource('tax-parameters', TaxParameterController::class)->except(['create', 'store']); // Chỉ cho xem, sửa, xóa

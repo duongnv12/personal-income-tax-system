@@ -1,76 +1,92 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
-            {{ __('Quản lý Người Phụ Thuộc') }}
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight"> {{-- text-xl để đồng bộ với các header khác --}}
+            <i class="fa-solid fa-users mr-2 text-purple-600"></i> {{ __('Quản lý Người Phụ Thuộc') }} {{-- Thêm icon và màu sắc --}}
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                <div class="p-6 sm:p-8 text-gray-900">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-bold text-gray-800">Danh sách Người Phụ Thuộc</h3>
-                        <a href="{{ route('dependents.create') }}" class="inline-flex items-center px-5 py-2.5 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                            {{ __('Thêm Người Phụ Thuộc') }}
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-100 transform hover:scale-[1.005] transition-all duration-300"> {{-- Thêm border và hiệu ứng hover --}}
+                <div class="p-6 text-gray-900"> {{-- Bỏ sm:p-8 để đồng bộ --}}
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b pb-4"> {{-- Thêm border-b và pb-4 --}}
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4 md:mb-0"> {{-- font-bold, text-2xl --}}
+                            <i class="fa-solid fa-users-line mr-2 text-teal-600"></i> Danh sách Người Phụ Thuộc {{-- Thêm icon và màu sắc --}}
+                        </h3>
+                        <a href="{{ route('dependents.create') }}"
+                           class="inline-flex items-center px-6 py-3 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md transform hover:scale-105"> {{-- Đồng bộ style nút --}}
+                            <i class="fa-solid fa-user-plus mr-2 text-white"></i> {{ __('Thêm Người Phụ Thuộc Mới') }} {{-- Thay icon SVG bằng Font Awesome --}}
                         </a>
                     </div>
 
+                    {{-- Thông báo thành công --}}
                     @if (session('success'))
-                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
-                            <strong class="font-bold">Thành công!</strong>
-                            <span class="block sm:inline">{{ session('success') }}</span>
-                            <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
-                                <svg class="fill-current h-6 w-6 text-green-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
-                            </span>
+                        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md" role="alert"> {{-- Đồng bộ style thông báo --}}
+                            <p class="font-bold"><i class="fa-solid fa-check-circle mr-2"></i> Thành công!</p>
+                            <p>{{ session('success') }}</p>
+                        </div>
+                    @endif
+                    {{-- Thông báo lỗi (nếu có) --}}
+                    @if (session('error'))
+                        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md" role="alert">
+                            <p class="font-bold"><i class="fa-solid fa-times-circle mr-2"></i> Lỗi!</p>
+                            <p>{{ session('error') }}</p>
                         </div>
                     @endif
 
                     @if ($dependents->isEmpty())
-                        <div class="text-center py-10">
-                            <p class="text-lg text-gray-600 mb-4">Bạn chưa có người phụ thuộc nào được đăng ký.</p>
-                            <a href="{{ route('dependents.create') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                {{ __('Thêm người phụ thuộc đầu tiên') }}
-                            </a>
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded-md flex items-center" role="alert"> {{-- Đồng bộ style thông báo rỗng --}}
+                            <i class="fa-solid fa-exclamation-triangle mr-3 text-2xl"></i> {{-- Icon lớn hơn một chút --}}
+                            <div>
+                                <p class="font-bold">Không có dữ liệu!</p>
+                                <p>Bạn chưa có người phụ thuộc nào được đăng ký. Hãy thêm một người mới để bắt đầu.</p>
+                            </div>
                         </div>
                     @else
-                        <div class="overflow-x-auto rounded-lg shadow-sm border border-gray-200">
+                        <div class="overflow-x-auto shadow-md rounded-lg border border-gray-200"> {{-- Đồng bộ style bảng --}}
                             <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-100">
+                                <thead class="bg-gray-100"> {{-- bg-gray-100 --}}
                                     <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Họ và tên</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Ngày sinh</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">CCCD/MST NPT</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Mối quan hệ</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Ngày ĐK Giảm trừ</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Ngày KT Giảm trừ</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Trạng thái</th>
-                                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">Hành động</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Họ và tên</th> {{-- text-gray-600, font-semibold --}}
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ngày sinh</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">CCCD/MST NPT</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mối quan hệ</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ngày ĐK Giảm trừ</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ngày KT Giảm trừ</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái</th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Thao tác</th> {{-- Căn phải hành động --}}
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     @foreach ($dependents as $dependent)
-                                        <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
+                                        <tr class="hover:bg-gray-50 transition duration-150 ease-in-out"> {{-- hover:bg-gray-50, duration-150 --}}
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $dependent->full_name }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $dependent->dob->format('d/m/Y') }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $dependent->identification_number }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $dependent->relationship }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                {{-- Điều chỉnh căn chỉnh icon và văn bản cho mối quan hệ nếu có icon --}}
+                                                {{ $dependent->relationship }} {{-- Giả định không có icon riêng cho mối quan hệ, chỉ là text --}}
+                                            </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $dependent->registration_date ? $dependent->registration_date->format('d/m/Y') : 'N/A' }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $dependent->deactivation_date ? $dependent->deactivation_date->format('d/m/Y') : 'Chưa kết thúc' }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap">
+                                                {{-- Căn chỉnh icon và văn bản cho Trạng thái --}}
                                                 @if($dependent->status == 'active')
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Hoạt động</span>
+                                                    <span class="px-2 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"><i class="fa-solid fa-circle-check mr-1"></i> Hoạt động</span> {{-- Thêm icon --}}
                                                 @else
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Không hoạt động</span>
+                                                    <span class="px-2 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800"><i class="fa-solid fa-circle-xmark mr-1"></i> Không hoạt động</span> {{-- Thêm icon --}}
                                                 @endif
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <a href="{{ route('dependents.edit', $dependent) }}" class="text-indigo-600 hover:text-indigo-900 mr-4 transition duration-150 ease-in-out">Sửa</a>
+                                                <a href="{{ route('dependents.edit', $dependent) }}" class="text-indigo-600 hover:text-indigo-900 mr-4 inline-flex items-center"> {{-- Thêm inline-flex items-center --}}
+                                                    <i class="fa-solid fa-edit mr-1"></i> Sửa
+                                                </a>
                                                 <form action="{{ route('dependents.destroy', $dependent) }}" method="POST" class="inline-block" onsubmit="return confirm('Bạn có chắc chắn muốn xóa người phụ thuộc này không?');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-900 transition duration-150 ease-in-out">Xóa</button>
+                                                    <button type="submit" class="text-red-600 hover:text-red-900 inline-flex items-center"> {{-- Thêm inline-flex items-center --}}
+                                                        <i class="fa-solid fa-trash-alt mr-1"></i> Xóa
+                                                    </button>
                                                 </form>
                                             </td>
                                         </tr>
@@ -79,9 +95,9 @@
                             </table>
                         </div>
                         {{-- Thêm phân trang nếu có --}}
-                        {{-- <div class="mt-4">
-                            {{ $dependents->links() }}
-                        </div> --}}
+                        {{-- <div class="mt-6"> --}}{{-- Thay mt-4 bằng mt-6 --}}
+                            {{-- {{ $dependents->links() }} --}}
+                        {{-- </div> --}}
                     @endif
                 </div>
             </div>
