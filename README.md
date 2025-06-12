@@ -1,8 +1,29 @@
-# Hệ Thống Tính Thuế Thu Nhập Cá Nhân (PIT System)
+# 🧾 Hệ Thống Tính Thuế Thu Nhập Cá Nhân (PIT System)
 
-Đây là một hệ thống web giúp quản lý, khai báo và tính toán thuế thu nhập cá nhân (TNCN) cho cá nhân tại Việt Nam. Hệ thống hỗ trợ quản lý người dùng, nguồn thu nhập, người phụ thuộc, các khoản giảm trừ, và xuất báo cáo PDF.
+![Laravel](https://img.shields.io/badge/Laravel-12.x-red?logo=laravel)
+![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue?logo=php)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-active-brightgreen)
 
-## Tính năng chính
+> Hệ thống web giúp quản lý, khai báo và tính toán thuế thu nhập cá nhân (TNCN) cho cá nhân tại Việt Nam. Hỗ trợ quản lý người dùng, nguồn thu nhập, người phụ thuộc, các khoản giảm trừ, và xuất báo cáo PDF.
+
+---
+
+## 📑 Mục lục
+
+- [Tính năng chính](#tính-năng-chính)
+- [Công nghệ sử dụng](#công-nghệ-sử-dụng)
+- [Cài đặt nhanh](#cài-đặt-nhanh)
+- [Tài khoản mẫu](#tài-khoản-mẫu)
+- [Lệnh Artisan hữu ích](#lệnh-artisan-hữu-ích)
+- [Cấu trúc thư mục](#cấu-trúc-thư-mục)
+- [Đóng góp](#đóng-góp)
+- [Liên hệ](#liên-hệ)
+- [Bản quyền](#bản-quyền)
+
+---
+
+## 🚀 Tính năng chính
 
 - Đăng ký, đăng nhập, xác thực email, phân quyền Admin/người dùng.
 - Quản lý thông tin cá nhân, đổi mật khẩu, xóa tài khoản.
@@ -13,73 +34,78 @@
 - Xuất báo cáo quyết toán thuế cuối năm và khai báo thu nhập ra file PDF.
 - Giao diện hiện đại, responsive, hỗ trợ tiếng Việt.
 
-## Công nghệ sử dụng
+---
 
-- **Backend:** Laravel 10+, PHP 8.1+
+## 🔄 Quy trình nghiệp vụ
+Toàn bộ logic tính toán thuế thu nhập cá nhân được đóng gói trong `app/Services/TaxCalculationService.php`.  
+Quy trình nghiệp vụ chính bao gồm:
+
+1. **Thu thập dữ liệu đầu vào:**  
+   - Thông tin cá nhân, thu nhập, người phụ thuộc, các khoản giảm trừ, bảo hiểm, v.v.
+
+2. **Tính tổng thu nhập chịu thuế:**  
+   - Tổng hợp các khoản thu nhập hợp lệ theo quy định.
+
+3. **Áp dụng các khoản giảm trừ:**  
+   - Giảm trừ gia cảnh cho bản thân, người phụ thuộc, bảo hiểm bắt buộc, các khoản đóng góp hợp lệ.
+
+4. **Tính thu nhập tính thuế:**  
+   - Thu nhập chịu thuế = Tổng thu nhập - Tổng giảm trừ.
+
+5. **Phân bậc thuế và tính số thuế phải nộp:**  
+   - Áp dụng biểu thuế lũy tiến từng phần theo quy định hiện hành.
+
+6. **Xuất kết quả:**  
+   - Trả về số thuế phải nộp, chi tiết từng bậc thuế, tổng giảm trừ, và các thông tin liên quan để hiển thị hoặc xuất báo cáo PDF.
+
+> **Lưu ý:**  
+> Mọi thay đổi về quy định thuế, mức giảm trừ, hoặc biểu thuế đều được cấu hình tập trung tại Service này để dễ bảo trì và cập nhật.
+
+---
+
+## 🛠️ Công nghệ sử dụng
+
+- **Backend:** Laravel 12+, PHP 8.2+
 - **Frontend:** Blade, TailwindCSS, FontAwesome
-- **Database:** MySQL/MariaDB
+- **Database:** MySQL
 - **PDF:** barryvdh/laravel-dompdf
 - **Xác thực:** Laravel Breeze, Sanctum
 
-## Cài đặt
+---
 
-### 1. Clone dự án
+## ⚡ Cài đặt nhanh
 
 ```sh
-git clone https://github.com/your-username/personal-income-tax-system.git
+git clone https://github.com/duongnv12/personal-income-tax-system.git
 cd personal-income-tax-system
-```
-### 2. Cài đặt các package
 
-```sh
 composer install
 npm install
-```
 
-### 3. Tạo file cấu hình môi trường
-
-```sh
 cp .env.example .env
-```
-Sau đó chỉnh sửa các thông tin kết nối database trong file `.env` cho phù hợp với môi trường của bạn.
+# Chỉnh sửa thông tin kết nối DB trong .env
 
-### 4. Tạo khóa ứng dụng
-
-```sh
 php artisan key:generate
-```
-
-### 5. Chạy migration và seed dữ liệu mẫu
-
-```sh
 php artisan migrate --seed
-```
-
-### 6. Biên dịch assets
-
-```sh
 npm run build
-```
 
-### 7. Khởi động server
-
-```sh
 php artisan serve
 ```
 
-Truy cập hệ thống tại [http://localhost:8000](http://localhost:8000)
+Truy cập hệ thống tại: [http://localhost:8000](http://localhost:8000)
 
-## Tài khoản mẫu
+---
 
-- **Admin:**  
-  Email: `admin@example.com`  
-  Mật khẩu: `password`
+## 👤 Tài khoản mẫu
 
-- **User thường:**  
-  Email: `user@example.com`  
-  Mật khẩu: `password`
+| Loại tài khoản | Email                | Mật khẩu   |
+|---------------|----------------------|------------|
+| Admin         | admin@example.com    | password   |
+| User thường   | user@example.com     | password   |
 
-## Một số lệnh Artisan hữu ích
+---
+
+## 🧩 Lệnh Artisan hữu ích
 
 - Làm mới database và seed lại dữ liệu:
   ```sh
@@ -92,18 +118,32 @@ Truy cập hệ thống tại [http://localhost:8000](http://localhost:8000)
   php artisan route:clear
   ```
 
-## Cấu trúc thư mục
+---
 
-- `app/Http/Controllers/` - Controllers cho các chức năng chính
-- `app/Services/TaxCalculationService.php` - Logic tính toán thuế
-- `resources/views/` - Giao diện Blade
-- `database/seeders/` - Seeder dữ liệu mẫu
-- `routes/web.php` - Định nghĩa route web
+## 📂 Cấu trúc thư mục
 
-## Đóng góp
-
-Mọi đóng góp, báo lỗi hoặc đề xuất đều được hoan nghênh! Vui lòng tạo issue hoặc pull request.
+- `app/Http/Controllers/` – Controllers cho các chức năng chính
+- `app/Services/TaxCalculationService.php` – Logic tính toán thuế
+- `resources/views/` – Giao diện Blade
+- `database/seeders/` – Seeder dữ liệu mẫu
+- `routes/web.php` – Định nghĩa route web
 
 ---
+
+## 🤝 Đóng góp
+
+Mọi đóng góp, báo lỗi hoặc đề xuất đều được hoan nghênh!  
+Vui lòng tạo [issue](https://github.com/your-username/personal-income-tax-system/issues) hoặc gửi pull request.
+
+---
+
+## 📬 Liên hệ
+
+- Email: ngduog.04@gmail.com
+- Github: [duongnv12](https://github.com/duongnv12)
+
+---
+
+## ©️ Bản quyền
 
 **Bản quyền © 2025** – Dự án mã nguồn mở phục vụ mục đích học tập và tham khảo.
