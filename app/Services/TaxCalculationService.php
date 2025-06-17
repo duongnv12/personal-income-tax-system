@@ -457,17 +457,79 @@ class TaxCalculationService
 
         // Chỉ xử lý Gross → Net, nếu Net → Gross thì trả về lỗi/chưa hỗ trợ
         if ($direction === 'net_to_gross') {
+            // Lặp để tìm gross_income phù hợp
+            $targetNet = $netIncome;
+            $minSalaryByRegion = [
+                1 => 4700000,
+                2 => 4200000,
+                3 => 3700000,
+                4 => 3300000,
+            ];
+            $minSalary = $minSalaryByRegion[$region] ?? 4700000;
+            $personalDeduction = $this->taxParameters[self::PERSONAL_DEDUCTION_KEY] ?? 11000000;
+            $dependentDeduction = $this->taxParameters[self::DEPENDENT_DEDUCTION_KEY] ?? 4400000;
+            $totalDependentDeduction = $dependents * $dependentDeduction;
+            $bhxhCap = $this->taxParameters[self::MAX_SOCIAL_INSURANCE_KEY] ?? 29800000;
+            $maxIter = 100;
+            $tolerance = 1;
+            $guessGross = $targetNet + 10000000; // Ước lượng ban đầu
+            $found = false;
+            for ($i = 0; $i < $maxIter; $i++) {
+                // Xác định lương đóng bảo hiểm
+                if ($insuranceType === 'official') {
+                    $insuranceSalary = $guessGross;
+                } elseif ($insuranceType === 'custom' && $insuranceCustom > 0) {
+                    $insuranceSalary = $insuranceCustom;
+                } else {
+                    $insuranceSalary = $guessGross;
+                }
+                $insuranceSalary = max($insuranceSalary, $minSalary);
+                $insuranceSalary = min($insuranceSalary, $bhxhCap);
+                $bhxh = $insuranceSalary * 0.08;
+                $bhyt = $insuranceSalary * 0.015;
+                $bhtn = $insuranceSalary * 0.01;
+                $totalInsurance = $bhxh + $bhyt + $bhtn;
+                $assessableIncome = $guessGross - $totalInsurance - $personalDeduction - $totalDependentDeduction - $otherDeductions;
+                if ($assessableIncome < 0) $assessableIncome = 0;
+                $taxPaid = 0;
+                if ($incomeType === 'salary') {
+                    $taxPaid = $this->calculateProgressiveTaxSalary($assessableIncome);
+                }
+                $net = $guessGross - $totalInsurance - $taxPaid - $otherDeductions;
+                if (abs($net - $targetNet) <= $tolerance) {
+                    $found = true;
+                    break;
+                }
+                // Điều chỉnh guessGross
+                $guessGross += ($targetNet - $net) * 1.05; // tăng tốc hội tụ
+                if ($guessGross < 0) $guessGross = $targetNet; // tránh âm
+            }
+            if (!$found) {
+                return [
+                    'actual_bhxh_deduction' => 0,
+                    'actual_tax_paid' => 0,
+                    'actual_net_income' => $targetNet,
+                    'actual_gross_income' => 0,
+                    'error' => 'Không thể tính ngược Gross phù hợp với Net đã nhập!'
+                ];
+            }
             return [
-                'actual_bhxh_deduction' => 0,
-                'actual_tax_paid' => 0,
-                'actual_net_income' => 0,
-                'actual_gross_income' => 0,
-                'error' => 'Chức năng Net → Gross sẽ được bổ sung sau!'
+                'actual_bhxh_deduction' => round($totalInsurance, 0),
+                'actual_tax_paid' => round($taxPaid, 0),
+                'actual_net_income' => round($net, 0),
+                'actual_gross_income' => round($guessGross, 0),
+                'personal_deduction' => $personalDeduction,
+                'dependent_deduction' => $totalDependentDeduction,
+                'region' => $region,
+                'insurance_salary' => $insuranceSalary,
+                'bhxh' => round($bhxh, 0),
+                'bhyt' => round($bhyt, 0),
+                'bhtn' => round($bhtn, 0),
+                'error' => null
             ];
         }
 
-        // --- Áp dụng chuẩn mới nhất (tương tự TopCV) ---
-        // 1. Lấy mức lương tối thiểu vùng (có thể hardcode hoặc lấy từ DB nếu có)
+    
         $minSalaryByRegion = [
             1 => 4700000, // Vùng I
             2 => 4200000, // Vùng II
