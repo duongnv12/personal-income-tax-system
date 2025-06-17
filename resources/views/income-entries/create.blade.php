@@ -65,13 +65,53 @@
                         </div>
 
                         <div class="mb-4">
-                            <x-input-label for="gross_income" :value="__('Tổng thu nhập Gross (VNĐ)')" />
-                            <x-text-input id="gross_income" class="block mt-1 w-full" type="number" step="1" name="gross_income" :value="old('gross_income')" required min="0" placeholder="Tổng tiền trước thuế và các khoản khấu trừ" />
-                            <x-input-error :messages="$errors->get('gross_income')" class="mt-2" />
+                            <x-input-label for="calculation_direction" :value="__('Chiều tính lương')" />
+                            <select id="calculation_direction" name="calculation_direction" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm py-2 px-3" required onchange="toggleDirectionFields()">
+                                <option value="gross_to_net" {{ old('calculation_direction', 'gross_to_net') == 'gross_to_net' ? 'selected' : '' }}>Gross → Net</option>
+                                <option value="net_to_gross" {{ old('calculation_direction') == 'net_to_gross' ? 'selected' : '' }}>Net → Gross</option>
+                            </select>
                         </div>
 
                         <div class="mb-4">
-                            <x-input-label for="net_income" :value="__('Thu nhập Net (thực nhận, tùy chọn)')" />
+                            <x-input-label for="region" :value="__('Vùng')" />
+                            <div class="flex gap-4 mt-2">
+                                @foreach ([1,2,3,4] as $vung)
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="region" value="{{ $vung }}" class="form-radio text-green-600" {{ old('region', 1) == $vung ? 'checked' : '' }} required>
+                                        <span class="ml-2">{{ $vung }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <x-input-label :value="__('Mức lương đóng bảo hiểm')" />
+                            <div class="flex gap-4 mt-2">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="insurance_salary_type" value="official" class="form-radio text-green-600" {{ old('insurance_salary_type', 'official') == 'official' ? 'checked' : '' }} onclick="toggleInsuranceSalaryInput()" required>
+                                    <span class="ml-2">Trên lương chính thức</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="insurance_salary_type" value="custom" class="form-radio text-green-600" {{ old('insurance_salary_type') == 'custom' ? 'checked' : '' }} onclick="toggleInsuranceSalaryInput()">
+                                    <span class="ml-2">Khác:</span>
+                                    <input type="number" name="insurance_salary_custom" id="insurance_salary_custom" class="ml-2 border-gray-300 rounded-md shadow-sm py-1 px-2 w-32" min="0" placeholder="VNĐ" value="{{ old('insurance_salary_custom') }}" style="display: {{ old('insurance_salary_type') == 'custom' ? 'inline-block' : 'none' }};" />
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <x-input-label for="dependents" :value="__('Số người phụ thuộc')" />
+                            <x-text-input id="dependents" class="block mt-1 w-full" type="number" name="dependents" :value="old('dependents', 0)" min="0" required placeholder="Số người phụ thuộc hợp lệ" />
+                        </div>
+
+                        <div class="mb-4" id="gross_income_field">
+                            <x-input-label for="gross_income" :value="__('Tổng thu nhập Gross (VNĐ)')" />
+                            <x-text-input id="gross_income" class="block mt-1 w-full" type="number" step="1" name="gross_income" :value="old('gross_income')" min="0" placeholder="Tổng tiền trước thuế và các khoản khấu trừ" />
+                            <x-input-error :messages="$errors->get('gross_income')" class="mt-2" />
+                        </div>
+
+                        <div class="mb-4" id="net_income_field" style="display: none;">
+                            <x-input-label for="net_income" :value="__('Thu nhập Net (thực nhận)')" />
                             <x-text-input id="net_income" class="block mt-1 w-full" type="number" step="1" name="net_income" :value="old('net_income')" min="0" placeholder="Số tiền thực nhận sau các khoản khấu trừ" />
                             <x-input-error :messages="$errors->get('net_income')" class="mt-2" />
                         </div>
@@ -121,7 +161,40 @@
             }
         }
 
+        function toggleDirectionFields() {
+            var direction = document.getElementById('calculation_direction').value;
+            var grossField = document.getElementById('gross_income_field');
+            var netField = document.getElementById('net_income_field');
+            if (direction === 'gross_to_net') {
+                grossField.style.display = 'block';
+                netField.style.display = 'none';
+            } else {
+                grossField.style.display = 'none';
+                netField.style.display = 'block';
+            }
+        }
+
+        function toggleInsuranceSalaryInput() {
+            var customInput = document.getElementById('insurance_salary_custom');
+            var customRadio = document.querySelector('input[name=insurance_salary_type][value=custom]');
+            if (customRadio.checked) {
+                customInput.style.display = 'inline-block';
+            } else {
+                customInput.style.display = 'none';
+                customInput.value = '';
+            }
+        }
+
         // Call the function on page load to handle old('entry_type')
-        document.addEventListener('DOMContentLoaded', toggleMonthField);
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleMonthField();
+            toggleDirectionFields();
+            toggleInsuranceSalaryInput();
+            document.getElementById('calculation_direction').addEventListener('change', toggleDirectionFields);
+            var radios = document.querySelectorAll('input[name=insurance_salary_type]');
+            radios.forEach(function(radio) {
+                radio.addEventListener('change', toggleInsuranceSalaryInput);
+            });
+        });
     </script>
 </x-app-layout>
