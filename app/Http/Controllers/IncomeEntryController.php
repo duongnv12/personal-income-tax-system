@@ -54,10 +54,15 @@ class IncomeEntryController extends Controller
             'year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
             'month' => ['nullable', 'integer', 'min:1', 'max:12', Rule::requiredIf($request->entry_type === 'monthly')],
             'entry_type' => 'required|in:monthly,yearly',
-            'gross_income' => 'required|numeric|min:0',
+            'calculation_direction' => 'required|in:gross_to_net,net_to_gross',
+            'region' => 'required|in:1,2,3,4',
+            'insurance_salary_type' => 'required|in:official,custom',
+            'insurance_salary_custom' => 'nullable|numeric|min:0',
+            'dependents' => 'required|integer|min:0',
+            'gross_income' => 'nullable|numeric|min:0',
+            'net_income' => 'nullable|numeric|min:0',
             'bhxh_deduction' => 'nullable|numeric|min:0',
             'other_deductions' => 'nullable|numeric|min:0',
-            // 'tax_paid' và 'net_income' sẽ được tính toán
         ], [
             'income_source_id.required' => 'Nguồn thu nhập là bắt buộc.',
             'income_source_id.exists' => 'Nguồn thu nhập không hợp lệ.',
@@ -67,21 +72,22 @@ class IncomeEntryController extends Controller
             'month.integer' => 'Tháng phải là số nguyên.',
             'entry_type.required' => 'Loại nhập là bắt buộc.',
             'entry_type.in' => 'Loại nhập không hợp lệ.',
-            'gross_income.required' => 'Thu nhập Gross là bắt buộc.',
-            'gross_income.numeric' => 'Thu nhập Gross phải là số.',
+            'calculation_direction.required' => 'Chiều tính lương là bắt buộc.',
+            'region.required' => 'Vùng là bắt buộc.',
+            'insurance_salary_type.required' => 'Chọn mức lương đóng bảo hiểm.',
+            'dependents.required' => 'Số người phụ thuộc là bắt buộc.',
             'gross_income.min' => 'Thu nhập Gross không thể âm.',
         ]);
 
         $incomeSource = IncomeSource::findOrFail($validatedData['income_source_id']);
-        $validatedData['income_type'] = $incomeSource->income_type; // Gán income_type từ nguồn thu nhập
+        $validatedData['income_type'] = $incomeSource->income_type;
 
-        // Chuyển Request sang một đối tượng IncomeEntry tạm thời để tính toán
-        $tempIncomeEntry = new IncomeEntry($validatedData);
-        $calculatedData = $this->taxService->calculateMonthlyTax($tempIncomeEntry);
+        $calculatedData = $this->taxService->calculateMonthlyTaxV2($validatedData);
 
         $validatedData['bhxh_deduction'] = $calculatedData['actual_bhxh_deduction'];
         $validatedData['tax_paid'] = $calculatedData['actual_tax_paid'];
         $validatedData['net_income'] = $calculatedData['actual_net_income'];
+        $validatedData['gross_income'] = $calculatedData['actual_gross_income'];
 
         Auth::user()->incomeEntries()->create($validatedData);
 
