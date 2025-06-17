@@ -444,7 +444,7 @@ class TaxCalculationService
      */
     public function calculateMonthlyTaxV2(array $data): array
     {
-        // Lấy dữ liệu từ form
+        // data từ form
         $direction = $data['calculation_direction'] ?? 'gross_to_net';
         $region = (int)($data['region'] ?? 1);
         $insuranceType = $data['insurance_salary_type'] ?? 'official';
@@ -455,7 +455,6 @@ class TaxCalculationService
         $otherDeductions = isset($data['other_deductions']) ? (float)$data['other_deductions'] : 0;
         $incomeType = $data['income_type'] ?? 'salary';
 
-        // Chỉ xử lý Gross → Net, nếu Net → Gross thì trả về lỗi/chưa hỗ trợ
         if ($direction === 'net_to_gross') {
             // Lặp để tìm gross_income phù hợp
             $targetNet = $netIncome;
@@ -492,8 +491,39 @@ class TaxCalculationService
                 $assessableIncome = $guessGross - $totalInsurance - $personalDeduction - $totalDependentDeduction - $otherDeductions;
                 if ($assessableIncome < 0) $assessableIncome = 0;
                 $taxPaid = 0;
+                $taxBracketsDetail = [];
                 if ($incomeType === 'salary') {
-                    $taxPaid = $this->calculateProgressiveTaxSalary($assessableIncome);
+                    $taxPaid = 0;
+                    $remaining = $assessableIncome;
+                    foreach ($this->taxBrackets as $bracket) {
+                        $incomeFrom = $bracket['income_from'];
+                        $incomeTo = $bracket['income_to'];
+                        $taxRate = $bracket['tax_rate'];
+                        $label = $bracket['label'] ?? (isset($incomeTo) ? ("Trên " . number_format($incomeFrom) . " đến " . number_format($incomeTo)) : ("Trên " . number_format($incomeFrom)));
+                        if ($remaining > 0 && $assessableIncome > $incomeFrom) {
+                            $amountInBracket = 0;
+                            if ($incomeTo === null) {
+                                $amountInBracket = $remaining;
+                            } else {
+                                $amountInBracket = min($remaining, $incomeTo - $incomeFrom);
+                            }
+                            $taxForBracket = $amountInBracket * $taxRate;
+                            $taxBracketsDetail[] = [
+                                'label' => $label,
+                                'rate' => $taxRate * 100,
+                                'amount' => round($taxForBracket, 0),
+                            ];
+                            $taxPaid += $taxForBracket;
+                            $remaining -= $amountInBracket;
+                        } else {
+                            $taxBracketsDetail[] = [
+                                'label' => $label,
+                                'rate' => $taxRate * 100,
+                                'amount' => 0,
+                            ];
+                        }
+                    }
+                    $taxPaid = round($taxPaid, 0);
                 }
                 $net = $guessGross - $totalInsurance - $taxPaid - $otherDeductions;
                 if (abs($net - $targetNet) <= $tolerance) {
@@ -501,7 +531,7 @@ class TaxCalculationService
                     break;
                 }
                 // Điều chỉnh guessGross
-                $guessGross += ($targetNet - $net) * 1.05; // tăng tốc hội tụ
+                $guessGross += ($targetNet - $net) * 1.05;
                 if ($guessGross < 0) $guessGross = $targetNet; // tránh âm
             }
             if (!$found) {
@@ -513,6 +543,13 @@ class TaxCalculationService
                     'error' => 'Không thể tính ngược Gross phù hợp với Net đã nhập!'
                 ];
             }
+            // 8. Chi phí người sử dụng lao động
+            $bhxh_employer = $insuranceSalary * 0.17;
+            $bhyt_employer = $insuranceSalary * 0.03;
+            $bhtn_employer = $insuranceSalary * 0.01;
+            $bhtnld = $insuranceSalary * 0.005;
+            $tong_chi_phi = $grossIncome + $bhxh_employer + $bhyt_employer + $bhtn_employer + $bhtnld;
+
             return [
                 'actual_bhxh_deduction' => round($totalInsurance, 0),
                 'actual_tax_paid' => round($taxPaid, 0),
@@ -525,6 +562,16 @@ class TaxCalculationService
                 'bhxh' => round($bhxh, 0),
                 'bhyt' => round($bhyt, 0),
                 'bhtn' => round($bhtn, 0),
+                'thu_nhap_truoc_thue' => round($grossIncome - $totalInsurance, 0),
+                'giam_tru_ban_than' => $personalDeduction,
+                'giam_tru_phu_thuoc' => $totalDependentDeduction,
+                'thu_nhap_chiu_thue' => round($assessableIncome, 0),
+                'tax_brackets_detail' => $taxBracketsDetail,
+                'bhxh_employer' => round($bhxh_employer, 0),
+                'bhyt_employer' => round($bhyt_employer, 0),
+                'bhtn_employer' => round($bhtn_employer, 0),
+                'bhtnld' => round($bhtnld, 0),
+                'tong_chi_phi' => round($tong_chi_phi, 0),
                 'error' => null
             ];
         }
@@ -569,14 +616,51 @@ class TaxCalculationService
 
         // 6. Tính thuế TNCN lũy tiến
         $taxPaid = 0;
+        $taxBracketsDetail = [];
         if ($incomeType === 'salary') {
-            $taxPaid = $this->calculateProgressiveTaxSalary($assessableIncome);
+            $taxPaid = 0;
+            $remaining = $assessableIncome;
+            foreach ($this->taxBrackets as $bracket) {
+                $incomeFrom = $bracket['income_from'];
+                $incomeTo = $bracket['income_to'];
+                $taxRate = $bracket['tax_rate'];
+                $label = $bracket['label'] ?? (isset($incomeTo) ? ("Trên " . number_format($incomeFrom) . " đến " . number_format($incomeTo)) : ("Trên " . number_format($incomeFrom)));
+                if ($remaining > 0 && $assessableIncome > $incomeFrom) {
+                    $amountInBracket = 0;
+                    if ($incomeTo === null) {
+                        $amountInBracket = $remaining;
+                    } else {
+                        $amountInBracket = min($remaining, $incomeTo - $incomeFrom);
+                    }
+                    $taxForBracket = $amountInBracket * $taxRate;
+                    $taxBracketsDetail[] = [
+                        'label' => $label,
+                        'rate' => $taxRate * 100,
+                        'amount' => round($taxForBracket, 0),
+                    ];
+                    $taxPaid += $taxForBracket;
+                    $remaining -= $amountInBracket;
+                } else {
+                    $taxBracketsDetail[] = [
+                        'label' => $label,
+                        'rate' => $taxRate * 100,
+                        'amount' => 0,
+                    ];
+                }
+            }
+            $taxPaid = round($taxPaid, 0);
         }
-        // Các loại thu nhập khác giữ nguyên logic cũ
 
         // 7. Tính lương thực nhận (Net)
         $net = $grossIncome - $totalInsurance - $taxPaid - $otherDeductions;
         if ($net < 0) $net = 0;
+
+        // 8. Chi phí người sử dụng lao động
+        $bhxh_employer = $insuranceSalary * 0.17;
+        $bhyt_employer = $insuranceSalary * 0.03;
+        $bhtn_employer = $insuranceSalary * 0.01;
+        $bhtnld = $insuranceSalary * 0.005;
+        $tong_chi_phi = $grossIncome + $bhxh_employer + $bhyt_employer + $bhtn_employer + $bhtnld;
 
         return [
             'actual_bhxh_deduction' => round($totalInsurance, 0),
@@ -590,6 +674,16 @@ class TaxCalculationService
             'bhxh' => round($bhxh, 0),
             'bhyt' => round($bhyt, 0),
             'bhtn' => round($bhtn, 0),
+            'thu_nhap_truoc_thue' => round($grossIncome - $totalInsurance, 0),
+            'giam_tru_ban_than' => $personalDeduction,
+            'giam_tru_phu_thuoc' => $totalDependentDeduction,
+            'thu_nhap_chiu_thue' => round($assessableIncome, 0),
+            'tax_brackets_detail' => $taxBracketsDetail,
+            'bhxh_employer' => round($bhxh_employer, 0),
+            'bhyt_employer' => round($bhyt_employer, 0),
+            'bhtn_employer' => round($bhtn_employer, 0),
+            'bhtnld' => round($bhtnld, 0),
+            'tong_chi_phi' => round($tong_chi_phi, 0),
             'error' => null
         ];
     }

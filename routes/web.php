@@ -44,14 +44,14 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-    // Quản lý người dùng
-    Route::resource('users', UserController::class); // Không cần except
+    Route::resource('users', UserController::class); 
 
-    // Quản lý tham số thuế
     Route::resource('tax-parameters', TaxParameterController::class)->except(['create', 'store']); // Chỉ cho xem, sửa, xóa
 
-    // Quản lý bậc thuế
     Route::resource('tax-brackets', TaxBracketController::class);
 });
+
+Route::get('/income-entries/create', [IncomeEntryController::class, 'create'])->name('income-entries.create');
+Route::post('/income-entries', [IncomeEntryController::class, 'store'])->name('income-entries.store');
 
 require __DIR__.'/auth.php';
