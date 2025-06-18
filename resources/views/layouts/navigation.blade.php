@@ -9,18 +9,15 @@
                             <a href="{{ route('admin.dashboard') }}" class="flex items-center space-x-2 text-gray-800 hover:text-gray-900 transition duration-150 ease-in-out">
                                 {{-- Có thể thay thế x-application-logo bằng SVG hoặc hình ảnh logo của bạn --}}
                                 <x-application-logo class="block h-9 w-auto fill-current text-indigo-600" />
-                                <span class="font-extrabold text-xl tracking-tight">{{ config('app.name', 'Laravel') }}</span>
                             </a>
                         @else
                             <a href="{{ route('dashboard') }}" class="flex items-center space-x-2 text-gray-800 hover:text-gray-900 transition duration-150 ease-in-out">
                                 <x-application-logo class="block h-9 w-auto fill-current text-indigo-600" />
-                                <span class="font-extrabold text-xl tracking-tight">{{ config('app.name', 'Laravel') }}</span>
                             </a>
                         @endif
                     @else
                         <a href="{{ url('/') }}" class="flex items-center space-x-2 text-gray-800 hover:text-gray-900 transition duration-150 ease-in-out"> {{-- Nếu chưa đăng nhập, về trang chủ --}}
                             <x-application-logo class="block h-9 w-auto fill-current text-indigo-600" />
-                            <span class="font-extrabold text-xl tracking-tight">{{ config('app.name', 'Laravel') }}</span>
                         </a>
                     @endauth
                 </div>

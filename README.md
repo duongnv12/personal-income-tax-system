@@ -82,7 +82,7 @@ cd personal-income-tax-system
 composer install
 npm install
 
-cp .env.example .env
+coppy .env.example .env
 # Chỉnh sửa thông tin kết nối DB trong .env
 
 php artisan key:generate
