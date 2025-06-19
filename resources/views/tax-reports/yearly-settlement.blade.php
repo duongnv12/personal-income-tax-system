@@ -7,7 +7,7 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg"> {{-- shadow-xl để nổi bật hơn --}}
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                 <div class="p-6 text-gray-900">
 
                     <div class="mb-8 flex flex-col md:flex-row items-center justify-between border-b pb-4">
@@ -106,9 +106,71 @@
                             </div>
                         </div>
                     </div>
+                    
+                    {{-- Bảng tổng hợp theo từng nguồn thu nhập --}}
+                    @if(isset($breakdownBySource))
+                    <h3 class="text-xl font-bold text-gray-800 mt-10 mb-6 flex items-center border-b pb-3">
+                        <i class="fa-solid fa-chart-pie mr-2 text-teal-500"></i>
+                        Tổng hợp theo từng Nguồn Thu Nhập
+                    </h3>
+                    @if ($breakdownBySource->isEmpty())
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4" role="alert">
+                            <p>Không có dữ liệu nguồn thu nhập để tổng hợp cho năm {{ $selectedYear }}.</p>
+                        </div>
+                    @else
+                        <div class="overflow-x-auto shadow-md rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nguồn thu nhập</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Loại</th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Tổng Gross</th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Tổng BHXH</th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Thuế tạm nộp</th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Thuế phải nộp (Ước tính)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    @foreach ($breakdownBySource as $source)
+                                        <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
+                                            <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-800">{{ $source['source_name'] }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">
+                                                @switch($source['income_type'])
+                                                    @case('salary') Tiền lương, TC @break
+                                                    @case('business') Kinh doanh @break
+                                                    @case('investment') Đầu tư @break
+                                                    @default {{ ucfirst($source['income_type']) }}
+                                                @endswitch
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-right font-semibold">{{ number_format($source['total_gross'], 0, ',', '.') }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-right">{{ number_format($source['total_bhxh'], 0, ',', '.') }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-right text-red-600">{{ number_format($source['total_tax_paid'], 0, ',', '.') }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-right font-medium text-blue-700">
+                                                @if($source['income_type'] !== 'salary')
+                                                    {{ number_format($source['tax_required'], 0, ',', '.') }}
+                                                @else
+                                                    <span class="italic text-gray-500" title="Thuế từ lương được tính trên tổng thu nhập từ lương của tất cả các nguồn.">Xem tổng hợp</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    {{-- Dòng tổng hợp cho thuế từ lương --}}
+                                    <tr class="bg-gray-100 font-bold">
+                                        <td colspan="5" class="px-6 py-4 text-right text-gray-800">Tổng thuế phải nộp từ Lương (tất cả các nguồn):</td>
+                                        <td class="px-6 py-4 text-right text-blue-800">{{ number_format($yearlyTaxSettlement['breakdown']['salary']['tax_required'], 0, ',', '.') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-2 text-sm text-gray-600 italic">
+                            * Ghi chú: Thuế từ "Tiền lương, TC" được tính trên tổng thu nhập từ tất cả các nguồn lương, không tách riêng lẻ. Các loại thu nhập khác được tính thuế riêng.
+                        </div>
+                    @endif
+                    @endif
+
 
                     {{-- Final Tax Status --}}
-                    <div class="mb-6
+                    <div class="mb-6 mt-10
                         @if ($yearlyTaxSettlement['tax_to_pay_or_refund'] > 0)
                             bg-red-100 text-red-800 border-red-300
                         @elseif ($yearlyTaxSettlement['tax_to_pay_or_refund'] < 0)
@@ -125,70 +187,17 @@
                             <i class="fa-solid fa-circle-info mr-3"></i> Bạn không có số thuế phải nộp thêm hoặc được hoàn lại trong năm <span class="font-bold">{{ $selectedYear }}</span>.
                         @endif
                     </div>
-
-                    {{-- Income Details Table --}}
-                    <h3 class="text-xl font-bold text-gray-800 mt-10 mb-6 flex items-center border-b pb-3">
-                        <i class="fa-solid fa-table mr-2 text-purple-500"></i> Chi tiết các khoản thu nhập trong năm <span class="text-blue-700 ml-2">{{ $selectedYear }}</span>
-                    </h3>
+                    
+                    {{-- Giữ lại logic PHP này để phần Xuất PDF theo công ty hoạt động --}}
                     @php
-                        // Lọc các khoản thu nhập cho năm được chọn
                         $incomeEntriesForSelectedYear = Auth::user()->incomeEntries()
                                                                ->where('year', $selectedYear)
                                                                ->with('incomeSource')
-                                                               ->orderBy('month')
                                                                ->get();
-                    @endphp
-
-                    @if ($incomeEntriesForSelectedYear->isEmpty())
-                        <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4" role="alert">
-                            <p class="font-bold">Không có dữ liệu!</p>
-                            <p>Hiện không có khoản thu nhập nào được ghi nhận cho năm {{ $selectedYear }}.</p>
-                        </div>
-                    @else
-                        <div class="overflow-x-auto shadow-md rounded-lg">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-100">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tháng</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nguồn</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Loại</th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Gross (VNĐ)</th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">BHXH (VNĐ)</th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Khấu trừ khác (VNĐ)</th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Thuế tạm nộp (VNĐ)</th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Net (VNĐ)</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    @foreach ($incomeEntriesForSelectedYear as $entry)
-                                        <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                @if ($entry->entry_type === 'monthly')
-                                                    Tháng {{ $entry->month }}
-                                                @else
-                                                    Cả năm
-                                                @endif
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-800">{{ $entry->incomeSource->name }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">{{ $entry->entry_type === 'monthly' ? 'Hàng tháng' : 'Hàng năm' }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right font-semibold">{{ number_format($entry->gross_income, 0, ',', '.') }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right">{{ number_format($entry->bhxh_deduction ?? 0, 0, ',', '.') }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right">{{ number_format($entry->other_deductions ?? 0, 0, ',', '.') }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right font-medium text-red-600">{{ number_format($entry->tax_paid ?? 0, 0, ',', '.') }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right font-bold text-green-700">{{ number_format($entry->net_income ?? 0, 0, ',', '.') }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @endif
-
-                    {{-- Company Specific PDF Export --}}
-                    @php
-                        // Lấy danh sách các công ty có thu nhập trong năm
                         $companies = $incomeEntriesForSelectedYear->pluck('incomeSource')->unique('id');
                     @endphp
 
+                    {{-- Company Specific PDF Export --}}
                     @if ($companies->count())
                         <div class="mt-8 pt-4 border-t border-gray-200">
                             <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">

@@ -687,4 +687,55 @@ class TaxCalculationService
             'error' => null
         ];
     }
+    
+    /**
+     * Provides a yearly breakdown of income and deductions per income source.
+     *
+     * @param User $user
+     * @param int $year
+     * @return \Illuminate\Support\Collection
+     */
+    public function getYearlyBreakdownBySource(User $user, int $year)
+    {
+        // Lấy tất cả các khoản thu nhập trong năm và thông tin nguồn liên quan
+        $incomeEntries = $user->incomeEntries()
+                              ->where('year', $year)
+                              ->with('incomeSource')
+                              ->get();
+
+        // Nhóm các khoản thu nhập theo ID của nguồn và tổng hợp dữ liệu
+        $breakdown = $incomeEntries->groupBy('income_source_id')->map(function ($entries, $sourceId) {
+            $source = $entries->first()->incomeSource;
+
+            if (!$source) {
+                return null; // Bỏ qua nếu không tìm thấy nguồn
+            }
+
+            $totalGross = $entries->sum('gross_income');
+            $totalBhxh = $entries->sum('bhxh_deduction');
+            $totalOtherDeductions = $entries->sum('other_deductions');
+            $totalTaxPaid = $entries->sum('tax_paid');
+
+            $taxRequired = 0;
+            // Tính thuế phải nộp trực tiếp cho các nguồn không phải lương
+            if ($source->income_type === 'business') {
+                $taxRequired = $this->calculateTaxBusiness($totalGross - $totalOtherDeductions);
+            } elseif ($source->income_type === 'investment') {
+                $taxRequired = $this->calculateTaxInvestment($totalGross);
+            }
+            // Đối với lương, thuế được tính trên tổng hợp nên sẽ hiển thị riêng
+
+            return [
+                'source_name' => $source->name,
+                'income_type' => $source->income_type,
+                'total_gross' => $totalGross,
+                'total_bhxh' => $totalBhxh,
+                'total_other_deductions' => $totalOtherDeductions,
+                'total_tax_paid' => $totalTaxPaid,
+                'tax_required' => $taxRequired, // Chỉ chính xác cho các nguồn không phải lương
+            ];
+        })->filter(); // Lọc bỏ các kết quả null
+
+        return $breakdown;
+    }
 }

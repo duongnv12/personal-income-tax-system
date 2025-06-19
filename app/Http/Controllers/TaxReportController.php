@@ -29,38 +29,36 @@ class TaxReportController extends Controller
     public function showYearlySettlement(?int $year = null)
     {
         $user = Auth::user();
-        $currentYear = (int)date('Y'); // Chắc chắn là số nguyên
+        $currentYear = (int)date('Y');
 
-        // Validation cơ bản cho năm
         if ($year !== null && ($year < 1900 || $year > ($currentYear + 1))) {
-            return redirect()->route('tax-reports.yearly-settlement', ['year' => $currentYear])
-                             ->with('error', 'Năm không hợp lệ. Vui lòng chọn năm từ 1900 đến ' . ($currentYear + 1) . '.');
+            return redirect()->route('tax.yearly_settlement', $currentYear)
+                             ->with('error', 'Năm không hợp lệ.');
         }
 
         $selectedYear = $year ?? $currentYear;
 
         try {
-            // Tính toán quyết toán thuế cho năm được chọn
+            // Tính toán quyết toán tổng hợp (giữ nguyên)
             $yearlyTaxSettlement = $this->taxService->calculateYearlyTaxSettlement($user, $selectedYear);
+
+            // THÊM MỚI: Lấy dữ liệu chi tiết theo từng nguồn
+            $breakdownBySource = $this->taxService->getYearlyBreakdownBySource($user, $selectedYear);
+
         } catch (\Exception $e) {
             Log::error("Lỗi khi tính toán quyết toán thuế cho người dùng ID {$user->id} năm {$selectedYear}: " . $e->getMessage());
-            return redirect()->route('dashboard')->with('error', 'Có lỗi xảy ra khi lấy dữ liệu quyết toán thuế. Vui lòng thử lại sau.');
+            return redirect()->route('dashboard')->with('error', 'Có lỗi xảy ra khi lấy dữ liệu quyết toán thuế.');
         }
 
-        // Lấy danh sách các năm mà người dùng có khoản thu nhập để hiển thị dropdown lựa chọn
         $availableYears = $user->incomeEntries()
                                ->selectRaw('DISTINCT year')
                                ->orderBy('year', 'desc')
                                ->pluck('year')
                                ->toArray();
-
-        // Đảm bảo năm hiện tại/năm được chọn có trong danh sách nếu chưa có thu nhập
         if (!in_array($currentYear, $availableYears)) {
             array_unshift($availableYears, $currentYear);
-            sort($availableYears); // Sắp xếp lại nếu thêm năm hiện tại
+            sort($availableYears);
         }
-
-        // Thêm năm đã chọn vào danh sách nếu nó chưa có (trường hợp người dùng chọn năm tương lai hợp lệ)
         if (!in_array($selectedYear, $availableYears)) {
             array_unshift($availableYears, $selectedYear);
             sort($availableYears);
@@ -70,6 +68,7 @@ class TaxReportController extends Controller
             'yearlyTaxSettlement' => $yearlyTaxSettlement,
             'selectedYear' => $selectedYear,
             'availableYears' => $availableYears,
+            'breakdownBySource' => $breakdownBySource, // Gửi dữ liệu mới sang view
         ]);
     }
 
