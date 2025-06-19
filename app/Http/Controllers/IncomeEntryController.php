@@ -45,6 +45,7 @@ class IncomeEntryController extends Controller
         if ($incomeSources->isEmpty()) {
             return redirect()->route('income-sources.create')->with('info', 'Bạn cần tạo ít nhất một nguồn thu nhập trước khi thêm khoản thu nhập.');
         }
+        // Đã xóa phần lấy $history
         return view('income-entries.create', compact('incomeSources'));
     }
 
@@ -65,9 +66,9 @@ class IncomeEntryController extends Controller
             'calculation_direction' => 'required|in:gross_to_net,net_to_gross',
             'region' => 'required|in:1,2,3,4',
             'insurance_salary_type' => 'required|in:official,custom',
-            'insurance_salary_custom' => 'nullable|numeric|min:0',
-            'gross_income' => 'nullable|numeric|min:0',
-            'net_income' => 'nullable|numeric|min:0',
+            'insurance_salary_custom' => 'nullable|string|min:0',
+            'gross_income' => 'nullable|string|min:0',
+            'net_income' => 'nullable|string|min:0',
         ], [
             'income_source_id.required' => 'Nguồn thu nhập là bắt buộc.',
             'income_source_id.exists' => 'Nguồn thu nhập không hợp lệ.',
@@ -77,6 +78,11 @@ class IncomeEntryController extends Controller
             'year.integer' => 'Năm phải là số nguyên.',
         ]);
 
+        // Unformat number strings
+        $validatedData['insurance_salary_custom'] = $validatedData['insurance_salary_custom'] ? (float)str_replace(',', '', $validatedData['insurance_salary_custom']) : null;
+        $validatedData['gross_income'] = $validatedData['gross_income'] ? (float)str_replace(',', '', $validatedData['gross_income']) : null;
+        $validatedData['net_income'] = $validatedData['net_income'] ? (float)str_replace(',', '', $validatedData['net_income']) : null;
+        
         $user = Auth::user();
         $dependentsCount = $user->dependents()->where('status', 'active')->count();
         $validatedData['dependents'] = $dependentsCount;
@@ -85,48 +91,41 @@ class IncomeEntryController extends Controller
         $result = app(\App\Services\TaxCalculationService::class)->calculateMonthlyTaxV2($validatedData);
         $error = isset($result['error']) && $result['error'] ? $result['error'] : null;
 
-        // Lưu vào DB (update nếu đã có, create nếu chưa)
-        $entry = IncomeEntry::updateOrCreate(
-            [
-                'user_id' => $user->id,
-                'income_source_id' => $validatedData['income_source_id'],
-                'year' => $validatedData['year'],
-                'month' => $validatedData['month'],
-                'income_type' => 'salary',
-            ],
-            [
-                'gross_income' => $result['actual_gross_income'] ?? ($validatedData['gross_income'] ?? null),
-                'net_income' => $result['actual_net_income'] ?? ($validatedData['net_income'] ?? null),
-                'bhxh_deduction' => $result['actual_bhxh_deduction'] ?? null,
-                'tax_paid' => $result['actual_tax_paid'] ?? null,
-                'region' => $validatedData['region'],
-                'insurance_salary_type' => $validatedData['insurance_salary_type'],
-                'insurance_salary_custom' => $validatedData['insurance_salary_custom'] ?? null,
-                'dependents' => $dependentsCount,
-                'calculation_direction' => $validatedData['calculation_direction'],
-            ]
-        );
+        if (!$error) {
+            IncomeEntry::updateOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'income_source_id' => $validatedData['income_source_id'],
+                    'year' => $validatedData['year'],
+                    'month' => $validatedData['month'],
+                    'income_type' => 'salary',
+                ],
+                [
+                    'gross_income' => $result['actual_gross_income'] ?? ($validatedData['gross_income'] ?? null),
+                    'net_income' => $result['actual_net_income'] ?? ($validatedData['net_income'] ?? null),
+                    'bhxh_deduction' => $result['actual_bhxh_deduction'] ?? null,
+                    'tax_paid' => $result['actual_tax_paid'] ?? null,
+                    // 'region' => $validatedData['region'],
+                    // 'insurance_salary_type' => $validatedData['insurance_salary_type'],
+                    // 'insurance_salary_custom' => $validatedData['insurance_salary_custom'] ?? null,
+                    // 'dependents' => $dependentsCount,
+                    // 'calculation_direction' => $validatedData['calculation_direction'],
+                ]
+            );
+        }
 
-        // Lấy lịch sử các khoản thu nhập đã lưu của user theo từng nguồn thu nhập, tháng/năm
         $incomeSources = $user->incomeSources()->get();
-        $history = IncomeEntry::where('user_id', $user->id)
-            ->with('incomeSource')
-            ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
-            ->get();
-
+        // Đã xóa phần lấy $history
+        
         return view('income-entries.create', [
             'result' => $result,
             'error' => $error,
             'incomeSources' => $incomeSources,
-            'history' => $history,
             'oldInput' => $validatedData,
         ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
+    // ... các hàm còn lại giữ nguyên ...
     public function edit(IncomeEntry $incomeEntry)
     {
         if ($incomeEntry->user_id !== Auth::id()) {
@@ -136,9 +135,6 @@ class IncomeEntryController extends Controller
         return view('income-entries.edit', compact('incomeEntry', 'incomeSources'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, IncomeEntry $incomeEntry)
     {
         if ($incomeEntry->user_id !== Auth::id()) {
@@ -173,9 +169,8 @@ class IncomeEntryController extends Controller
         ]);
 
         $incomeSource = IncomeSource::findOrFail($validatedData['income_source_id']);
-        $validatedData['income_type'] = $incomeSource->income_type; // Cập nhật income_type từ nguồn thu nhập
+        $validatedData['income_type'] = $incomeSource->income_type; 
 
-        // Chuyển Request sang một đối tượng IncomeEntry tạm thời để tính toán
         $tempIncomeEntry = new IncomeEntry($validatedData);
         $calculatedData = $this->taxService->calculateMonthlyTax($tempIncomeEntry);
 
@@ -188,9 +183,6 @@ class IncomeEntryController extends Controller
         return redirect()->route('income-entries.index')->with('success', 'Đã cập nhật khoản thu nhập thành công.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(IncomeEntry $incomeEntry)
     {
         if ($incomeEntry->user_id !== Auth::id()) {

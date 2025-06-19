@@ -1,20 +1,20 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            <i class="fa-solid fa-sack-dollar mr-2 text-green-600"></i> {{ __('Quản lý Khoản Thu Nhập') }}
+            <i class="fa-solid fa-history mr-2 text-indigo-600"></i> {{ __('Lịch sử Khoản Thu Nhập') }}
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="w-full mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-100 transform hover:scale-[1.005] transition-all duration-300"> {{-- Thêm border và hiệu ứng hover --}}
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-100">
                 <div class="p-6 text-gray-900">
                     <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b pb-4">
                         <h3 class="text-2xl font-bold text-gray-800 mb-4 md:mb-0">
-                            <i class="fa-solid fa-receipt mr-2 text-indigo-600"></i> Danh sách Khoản Thu Nhập
+                            <i class="fa-solid fa-receipt mr-2 text-indigo-600"></i> Danh sách các Khoản Thu Nhập
                         </h3>
                         <a href="{{ route('income-entries.create') }}"
-                           class="inline-flex items-center px-6 py-3 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md transform hover:scale-105"> {{-- Đồng bộ style nút --}}
+                           class="inline-flex items-center px-6 py-3 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md transform hover:scale-105">
                             <i class="fa-solid fa-plus-circle mr-2 text-white"></i> {{ __('Thêm Khoản Thu Nhập Mới') }}
                         </a>
                     </div>
@@ -39,15 +39,15 @@
                     @endif
 
                     @if ($incomeEntries->isEmpty())
-                        <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded-md flex items-center" role="alert"> {{-- Thêm flex và items-center --}}
-                            <i class="fa-solid fa-exclamation-triangle mr-3 text-2xl"></i> {{-- Icon lớn hơn một chút --}}
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded-md flex items-center" role="alert">
+                            <i class="fa-solid fa-exclamation-triangle mr-3 text-2xl"></i>
                             <div>
                                 <p class="font-bold">Không có dữ liệu!</p>
                                 <p>Bạn chưa có khoản thu nhập nào được khai báo. Hãy thêm một khoản mới để bắt đầu.</p>
                             </div>
                         </div>
                     @else
-                        <div class="overflow-x-visible shadow-md rounded-lg border border-gray-200">
+                        <div class="overflow-x-auto shadow-md rounded-lg border border-gray-200">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-100">
                                     <tr>
@@ -67,7 +67,6 @@
                                         <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
                                             <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{{ $entry->year }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-gray-700">
-                                                {{-- Căn chỉnh icon và văn bản cho Kỳ tính --}}
                                                 @if ($entry->entry_type === 'monthly')
                                                     <span class="inline-flex items-center text-xs leading-5 font-semibold">Tháng {{ $entry->month }}</span>
                                                 @else
@@ -76,7 +75,6 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ $entry->incomeSource->name }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap">
-                                                {{-- Điều chỉnh căn chỉnh icon và văn bản cho thẻ span --}}
                                                 @switch($entry->incomeSource->income_type)
                                                     @case('salary') <span class="px-2 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800"><i class="fa-solid fa-money-bill-wave mr-1"></i> Tiền lương, tiền công</span> @break
                                                     @case('business') <span class="px-2 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"><i class="fa-solid fa-briefcase mr-1"></i> Kinh doanh</span> @break
@@ -105,6 +103,9 @@
                                     @endforeach
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="mt-4">
+                            {{ $incomeEntries->links() }}
                         </div>
                     @endif
                 </div>
