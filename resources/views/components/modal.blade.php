@@ -5,12 +5,18 @@
 ])
 
 @php
+// THAY ĐỔI: Bổ sung thêm các kích thước lớn hơn vào mảng
 $maxWidth = [
     'sm' => 'sm:max-w-sm',
     'md' => 'sm:max-w-md',
     'lg' => 'sm:max-w-lg',
     'xl' => 'sm:max-w-xl',
     '2xl' => 'sm:max-w-2xl',
+    '3xl' => 'sm:max-w-3xl',
+    '4xl' => 'sm:max-w-4xl',
+    '5xl' => 'sm:max-w-5xl',
+    '6xl' => 'sm:max-w-6xl',
+    '7xl' => 'sm:max-w-7xl',
 ][$maxWidth];
 @endphp
 
@@ -26,15 +32,28 @@ $maxWidth = [
         },
         firstFocusable() { return this.focusables()[0] },
         lastFocusable() { return this.focusables().slice(-1)[0] },
-        nextFocusable() { return this.focusables()[this.nextFocusableIndex()] || this.firstFocusable() },
-        prevFocusable() { return this.focusables()[this.prevFocusableIndex()] || this.lastFocusable() },
-        nextFocusableIndex() { return (this.focusables().indexOf(document.activeElement) + 1) % (this.focusables().length + 1) },
-        prevFocusableIndex() { return Math.max(0, this.focusables().indexOf(document.activeElement)) -1 },
+        nextFocusable() {
+            let el = this.focusables().find(el => el === document.activeElement)
+            let index = this.focusables().indexOf(el)
+            if (index === this.focusables().length - 1) {
+                return this.firstFocusable()
+            }
+            return this.focusables()[index + 1]
+        },
+        prevFocusable() {
+            let el = this.focusables().find(el => el === document.activeElement)
+            let index = this.focusables().indexOf(el)
+            if (index === 0) {
+                return this.lastFocusable()
+            }
+            return this.focusables()[index - 1]
+        },
     }"
     x-init="$watch('show', value => {
         if (value) {
             document.body.classList.add('overflow-y-hidden');
-            {{ $attributes->has('focusable') ? 'setTimeout(() => firstFocusable().focus(), 100)' : '' }}
+            {{-- HACK: Focus on the first focusable element after a short delay --}}
+            setTimeout(() => firstFocusable()?.focus(), 100);
         } else {
             document.body.classList.remove('overflow-y-hidden');
         }

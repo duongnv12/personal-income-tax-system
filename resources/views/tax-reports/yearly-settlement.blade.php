@@ -7,7 +7,7 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg" x-data="sourceDetailsModal()">
                 <div class="p-6 text-gray-900">
 
                     <div class="mb-8 flex flex-col md:flex-row items-center justify-between border-b pb-4">
@@ -45,61 +45,43 @@
                         <i class="fa-solid fa-chart-line mr-2 text-blue-500"></i> Tổng quan tài chính
                     </h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                        {{-- Card: Tổng thu nhập Gross chịu thuế --}}
                         <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg shadow-md flex items-start space-x-4">
-                            <div class="flex-shrink-0 text-blue-600 text-3xl">
-                                <i class="fa-solid fa-sack-dollar"></i>
-                            </div>
+                            <div class="flex-shrink-0 text-blue-600 text-3xl"><i class="fa-solid fa-sack-dollar"></i></div>
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Tổng thu nhập Gross chịu thuế:</p>
                                 <p class="font-bold text-2xl text-blue-900 mt-1">{{ number_format($yearlyTaxSettlement['total_gross_income'], 0, ',', '.') }} VNĐ</p>
                             </div>
                         </div>
-                        {{-- Card: Tổng giảm trừ BHXH & khác --}}
                         <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg shadow-md flex items-start space-x-4">
-                            <div class="flex-shrink-0 text-purple-600 text-3xl">
-                                <i class="fa-solid fa-hand-holding-dollar"></i>
-                            </div>
+                            <div class="flex-shrink-0 text-purple-600 text-3xl"><i class="fa-solid fa-hand-holding-dollar"></i></div>
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Tổng giảm trừ BHXH & khác:</p>
                                 <p class="font-bold text-2xl text-purple-900 mt-1">{{ number_format($yearlyTaxSettlement['total_bhxh_deduction'] + $yearlyTaxSettlement['total_other_deductions'], 0, ',', '.') }} VNĐ</p>
                             </div>
                         </div>
-                        {{-- Card: Tổng giảm trừ gia cảnh --}}
                         <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-lg shadow-md flex items-start space-x-4">
-                            <div class="flex-shrink-0 text-indigo-600 text-3xl">
-                                <i class="fa-solid fa-users-line"></i>
-                            </div>
+                            <div class="flex-shrink-0 text-indigo-600 text-3xl"><i class="fa-solid fa-users-line"></i></div>
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Tổng giảm trừ gia cảnh:</p>
                                 <p class="font-bold text-2xl text-indigo-900 mt-1">{{ number_format($yearlyTaxSettlement['total_personal_deductions'], 0, ',', '.') }} VNĐ</p>
                             </div>
                         </div>
-                        {{-- Card: Thu nhập tính thuế cả năm --}}
                         <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-lg shadow-md flex items-start space-x-4">
-                            <div class="flex-shrink-0 text-yellow-600 text-3xl">
-                                <i class="fa-solid fa-file-invoice"></i>
-                            </div>
+                            <div class="flex-shrink-0 text-yellow-600 text-3xl"><i class="fa-solid fa-file-invoice"></i></div>
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Thu nhập tính thuế cả năm:</p>
                                 <p class="font-bold text-2xl text-yellow-900 mt-1">{{ number_format($yearlyTaxSettlement['total_taxable_income_yearly'], 0, ',', '.') }} VNĐ</p>
                             </div>
                         </div>
-                        {{-- Card: Tổng thuế đã tạm nộp --}}
                         <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-lg shadow-md flex items-start space-x-4">
-                            <div class="flex-shrink-0 text-red-600 text-3xl">
-                                <i class="fa-solid fa-money-check-dollar"></i>
-                            </div>
+                            <div class="flex-shrink-0 text-red-600 text-3xl"><i class="fa-solid fa-money-check-dollar"></i></div>
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Tổng thuế đã tạm nộp:</p>
                                 <p class="font-bold text-2xl text-red-900 mt-1">{{ number_format($yearlyTaxSettlement['total_tax_paid_provisional'], 0, ',', '.') }} VNĐ</p>
                             </div>
                         </div>
-                        {{-- Card: Tổng thuế phải nộp cả năm --}}
                         <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg shadow-md flex items-start space-x-4">
-                            <div class="flex-shrink-0 text-green-600 text-3xl">
-                                <i class="fa-solid fa-file-circle-check"></i>
-                            </div>
+                            <div class="flex-shrink-0 text-green-600 text-3xl"><i class="fa-solid fa-file-circle-check"></i></div>
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Tổng thuế phải nộp cả năm:</p>
                                 <p class="font-bold text-2xl text-green-900 mt-1">{{ number_format($yearlyTaxSettlement['total_tax_required_yearly'], 0, ',', '.') }} VNĐ</p>
@@ -125,13 +107,12 @@
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nguồn thu nhập</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Loại</th>
                                         <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Tổng Gross</th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Tổng BHXH</th>
                                         <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Thuế tạm nộp</th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Thuế phải nộp (Ước tính)</th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Chi tiết</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-                                    @foreach ($breakdownBySource as $source)
+                                    @foreach ($breakdownBySource as $sourceId => $source)
                                         <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
                                             <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-800">{{ $source['source_name'] }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-gray-600">
@@ -143,31 +124,19 @@
                                                 @endswitch
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right font-semibold">{{ number_format($source['total_gross'], 0, ',', '.') }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right">{{ number_format($source['total_bhxh'], 0, ',', '.') }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-red-600">{{ number_format($source['total_tax_paid'], 0, ',', '.') }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right font-medium text-blue-700">
-                                                @if($source['income_type'] !== 'salary')
-                                                    {{ number_format($source['tax_required'], 0, ',', '.') }}
-                                                @else
-                                                    <span class="italic text-gray-500" title="Thuế từ lương được tính trên tổng thu nhập từ lương của tất cả các nguồn.">Xem tổng hợp</span>
-                                                @endif
+                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button type="button" @click="fetchSourceDetails({{ $selectedYear }}, {{ $sourceId }})" class="text-indigo-600 hover:text-indigo-900 font-semibold hover:underline">
+                                                    Xem chi tiết
+                                                </button>
                                             </td>
                                         </tr>
                                     @endforeach
-                                    {{-- Dòng tổng hợp cho thuế từ lương --}}
-                                    <tr class="bg-gray-100 font-bold">
-                                        <td colspan="5" class="px-6 py-4 text-right text-gray-800">Tổng thuế phải nộp từ Lương (tất cả các nguồn):</td>
-                                        <td class="px-6 py-4 text-right text-blue-800">{{ number_format($yearlyTaxSettlement['breakdown']['salary']['tax_required'], 0, ',', '.') }}</td>
-                                    </tr>
                                 </tbody>
                             </table>
                         </div>
-                        <div class="mt-2 text-sm text-gray-600 italic">
-                            * Ghi chú: Thuế từ "Tiền lương, TC" được tính trên tổng thu nhập từ tất cả các nguồn lương, không tách riêng lẻ. Các loại thu nhập khác được tính thuế riêng.
-                        </div>
                     @endif
                     @endif
-
 
                     {{-- Final Tax Status --}}
                     <div class="mb-6 mt-10
@@ -188,16 +157,11 @@
                         @endif
                     </div>
                     
-                    {{-- Giữ lại logic PHP này để phần Xuất PDF theo công ty hoạt động --}}
+                    {{-- Company Specific PDF Export --}}
                     @php
-                        $incomeEntriesForSelectedYear = Auth::user()->incomeEntries()
-                                                               ->where('year', $selectedYear)
-                                                               ->with('incomeSource')
-                                                               ->get();
-                        $companies = $incomeEntriesForSelectedYear->pluck('incomeSource')->unique('id');
+                        $companies = $breakdownBySource->keys()->map(fn($id) => \App\Models\IncomeSource::find($id))->filter();
                     @endphp
 
-                    {{-- Company Specific PDF Export --}}
                     @if ($companies->count())
                         <div class="mt-8 pt-4 border-t border-gray-200">
                             <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
@@ -206,16 +170,120 @@
                             <p class="text-gray-700 mb-4">Chọn một công ty để xuất báo cáo thu nhập riêng từ nguồn đó (thường dùng để lấy chứng từ khấu trừ thuế):</p>
                             <div class="flex flex-wrap gap-3">
                                 @foreach ($companies as $company)
+                                    @if ($company)
                                     <a href="{{ route('tax-reports.company-income-pdf', ['year' => $selectedYear, 'companyId' => $company->id]) }}"
                                        class="inline-flex items-center px-5 py-2 bg-indigo-600 border border-transparent rounded-full font-semibold text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
                                         <i class="fa-solid fa-file-export mr-2"></i> {{ $company->name }}
                                     </a>
+                                    @endif
                                 @endforeach
                             </div>
                         </div>
-                    @endif
+                    @endif {{-- <-- THẺ @endif BỊ THIẾU ĐÃ ĐƯỢC THÊM VÀO ĐÂY --}}
                 </div>
+
+                 <x-modal name="source-details-modal" maxWidth="4xl">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <h2 class="text-xl font-bold text-gray-900" x-text="`Chi tiết ${details?.summary?.source_name || '...'}`"></h2>
+                            <button @click="$dispatch('close-modal', 'source-details-modal')" class="text-gray-400 hover:text-gray-600">&times;</button>
+                        </div>
+                
+                        <div x-show="isLoading" class="text-center p-10">
+                            <p>Đang tải dữ liệu...</p>
+                        </div>
+                
+                        <div x-show="!isLoading && details">
+                            {{-- Tóm tắt trong Modal --}}
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div class="p-3 bg-gray-50 rounded-lg border">
+                                    <p class="text-sm text-gray-600">Tổng Gross</p>
+                                    <p class="text-xl font-bold text-gray-800" x-text="formatCurrency(details.summary.total_gross)"></p>
+                                </div>
+                                <div class="p-3 bg-gray-50 rounded-lg border">
+                                    <p class="text-sm text-gray-600">Tổng BHXH</p>
+                                    <p class="text-xl font-bold text-gray-800" x-text="formatCurrency(details.summary.total_bhxh)"></p>
+                                </div>
+                                <div class="p-3 bg-gray-50 rounded-lg border">
+                                    <p class="text-sm text-gray-600">Tổng thuế đã nộp</p>
+                                    <p class="text-xl font-bold text-red-600" x-text="formatCurrency(details.summary.total_tax_paid)"></p>
+                                </div>
+                            </div>
+                
+                            {{-- Bảng chi tiết tháng trong Modal --}}
+                            <div class="max-h-96 overflow-y-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-100 sticky top-0">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kỳ</th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Gross</th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">BHXH</th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Thuế tạm nộp</th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Net</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200">
+                                        <template x-for="entry in details.entries" :key="entry.id">
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-2" x-text="entry.month ? `Tháng ${entry.month}` : 'Cả năm'"></td>
+                                                <td class="px-4 py-2 text-right" x-text="formatCurrency(entry.gross_income)"></td>
+                                                <td class="px-4 py-2 text-right" x-text="formatCurrency(entry.bhxh_deduction)"></td>
+                                                <td class="px-4 py-2 text-right" x-text="formatCurrency(entry.tax_paid)"></td>
+                                                <td class="px-4 py-2 text-right font-semibold" x-text="formatCurrency(entry.net_income)"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </x-modal>
+
             </div>
         </div>
     </div>
+    @push('scripts')
+    <script>
+        function sourceDetailsModal() {
+            return {
+                isLoading: false,
+                details: null,
+                fetchSourceDetails(year, sourceId) {
+                    if (!sourceId) return;
+                    this.isLoading = true;
+                    this.details = null;
+    
+                    this.$dispatch('open-modal', 'source-details-modal');
+
+                    fetch(`/tax-reports/${year}/source/${sourceId}/details`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        this.details = data;
+                        this.isLoading = false;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching source details:', error);
+                        this.isLoading = false;
+                        this.$dispatch('close-modal', 'source-details-modal');
+                        alert('Không thể tải chi tiết. Vui lòng thử lại.');
+                    });
+                },
+                formatCurrency(value) {
+                    if (value === null || typeof value === 'undefined') return '0';
+                    return new Intl.NumberFormat('vi-VN').format(value);
+                }
+            }
+        }
+    </script>
+    @endpush
 </x-app-layout>

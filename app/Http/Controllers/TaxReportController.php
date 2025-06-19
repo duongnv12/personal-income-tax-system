@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf; // Import facade PDF
 use Maatwebsite\Excel\Facades\Excel; // Import facade Excel
 use App\Exports\YearlyTaxSettlementExport; // Import Export Class
+use App\Models\IncomeSource;
 use Illuminate\Support\Facades\Log; // Import Log facade
 
 class TaxReportController extends Controller
@@ -199,5 +200,36 @@ class TaxReportController extends Controller
             Log::error("Lỗi khi xuất PDF thu nhập công ty cho user {$user->id} năm {$year} cty {$companyId}: " . $e->getMessage());
             return back()->with('error', 'Có lỗi xảy ra khi xuất PDF.');
         }
+    }
+
+    /**
+     * Lấy chi tiết các khoản thu nhập của một nguồn cụ thể dưới dạng JSON.
+     */
+    public function getSourceDetailsJson(Request $request, int $year, IncomeSource $source)
+    {
+        // Đảm bảo người dùng chỉ có thể truy cập dữ liệu của chính họ
+        if ($source->user_id !== Auth::id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Lấy tất cả các khoản thu nhập từ nguồn này trong năm
+        $entries = $source->incomeEntries()
+            ->where('year', $year)
+            ->orderBy('month', 'asc')
+            ->get();
+
+        // Tạo một bản tóm tắt
+        $summary = [
+            'source_name' => $source->name,
+            'total_gross' => $entries->sum('gross_income'),
+            'total_bhxh' => $entries->sum('bhxh_deduction'),
+            'total_tax_paid' => $entries->sum('tax_paid'),
+        ];
+        
+        // Trả về dữ liệu dưới dạng JSON
+        return response()->json([
+            'summary' => $summary,
+            'entries' => $entries,
+        ]);
     }
 }

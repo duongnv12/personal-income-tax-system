@@ -49,6 +49,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::resource('tax-parameters', TaxParameterController::class)->except(['create', 'store']); // Chỉ cho xem, sửa, xóa
 
     Route::resource('tax-brackets', TaxBracketController::class);
+
+    Route::get('/tax-reports/{year}/source/{source}/details', [App\Http\Controllers\TaxReportController::class, 'getSourceDetailsJson'])->name('tax-reports.source-details');
+
 });
 
 Route::get('/income-entries/create', [IncomeEntryController::class, 'create'])->name('income-entries.create');
