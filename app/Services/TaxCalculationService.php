@@ -436,4 +436,255 @@ class TaxCalculationService
             // Có thể bổ sung các trường khác nếu cần
         ];
     }
+
+    /**
+     * Tính toán lương/thực nhận và thuế cho cả hai chiều Gross → Net và Net → Gross (bước 1: chỉ Gross → Net)
+     * @param array $data
+     * @return array
+     */
+    public function calculateMonthlyTaxV2(array $data): array
+    {
+        // data từ form
+        $direction = $data['calculation_direction'] ?? 'gross_to_net';
+        $region = (int)($data['region'] ?? 1);
+        $insuranceType = $data['insurance_salary_type'] ?? 'official';
+        $insuranceCustom = isset($data['insurance_salary_custom']) ? (float)$data['insurance_salary_custom'] : null;
+        $dependents = (int)($data['dependents'] ?? 0);
+        $grossIncome = isset($data['gross_income']) ? (float)$data['gross_income'] : 0;
+        $netIncome = isset($data['net_income']) ? (float)$data['net_income'] : 0;
+        $otherDeductions = isset($data['other_deductions']) ? (float)$data['other_deductions'] : 0;
+        $incomeType = $data['income_type'] ?? 'salary';
+
+        if ($direction === 'net_to_gross') {
+            // Lặp để tìm gross_income phù hợp
+            $targetNet = $netIncome;
+            $minSalaryByRegion = [
+                1 => 4700000,
+                2 => 4200000,
+                3 => 3700000,
+                4 => 3300000,
+            ];
+            $minSalary = $minSalaryByRegion[$region] ?? 4700000;
+            $personalDeduction = $this->taxParameters[self::PERSONAL_DEDUCTION_KEY] ?? 11000000;
+            $dependentDeduction = $this->taxParameters[self::DEPENDENT_DEDUCTION_KEY] ?? 4400000;
+            $totalDependentDeduction = $dependents * $dependentDeduction;
+            $bhxhCap = $this->taxParameters[self::MAX_SOCIAL_INSURANCE_KEY] ?? 29800000;
+            $maxIter = 100;
+            $tolerance = 1;
+            $guessGross = $targetNet + 10000000; // Ước lượng ban đầu
+            $found = false;
+            for ($i = 0; $i < $maxIter; $i++) {
+                // Xác định lương đóng bảo hiểm
+                if ($insuranceType === 'official') {
+                    $insuranceSalary = $guessGross;
+                } elseif ($insuranceType === 'custom' && $insuranceCustom > 0) {
+                    $insuranceSalary = $insuranceCustom;
+                } else {
+                    $insuranceSalary = $guessGross;
+                }
+                $insuranceSalary = max($insuranceSalary, $minSalary);
+                $insuranceSalary = min($insuranceSalary, $bhxhCap);
+                $bhxh = $insuranceSalary * 0.08;
+                $bhyt = $insuranceSalary * 0.015;
+                $bhtn = $insuranceSalary * 0.01;
+                $totalInsurance = $bhxh + $bhyt + $bhtn;
+                $assessableIncome = $guessGross - $totalInsurance - $personalDeduction - $totalDependentDeduction - $otherDeductions;
+                if ($assessableIncome < 0) $assessableIncome = 0;
+                $taxPaid = 0;
+                $taxBracketsDetail = [];
+                if ($incomeType === 'salary') {
+                    $taxPaid = 0;
+                    $remaining = $assessableIncome;
+                    foreach ($this->taxBrackets as $bracket) {
+                        $incomeFrom = $bracket['income_from'];
+                        $incomeTo = $bracket['income_to'];
+                        $taxRate = $bracket['tax_rate'];
+                        $label = $bracket['label'] ?? (isset($incomeTo) ? ("Trên " . number_format($incomeFrom) . " đến " . number_format($incomeTo)) : ("Trên " . number_format($incomeFrom)));
+                        if ($remaining > 0 && $assessableIncome > $incomeFrom) {
+                            $amountInBracket = 0;
+                            if ($incomeTo === null) {
+                                $amountInBracket = $remaining;
+                            } else {
+                                $amountInBracket = min($remaining, $incomeTo - $incomeFrom);
+                            }
+                            $taxForBracket = $amountInBracket * $taxRate;
+                            $taxBracketsDetail[] = [
+                                'label' => $label,
+                                'rate' => $taxRate * 100,
+                                'amount' => round($taxForBracket, 0),
+                            ];
+                            $taxPaid += $taxForBracket;
+                            $remaining -= $amountInBracket;
+                        } else {
+                            $taxBracketsDetail[] = [
+                                'label' => $label,
+                                'rate' => $taxRate * 100,
+                                'amount' => 0,
+                            ];
+                        }
+                    }
+                    $taxPaid = round($taxPaid, 0);
+                }
+                $net = $guessGross - $totalInsurance - $taxPaid - $otherDeductions;
+                if (abs($net - $targetNet) <= $tolerance) {
+                    $found = true;
+                    break;
+                }
+                // Điều chỉnh guessGross
+                $guessGross += ($targetNet - $net) * 1.05;
+                if ($guessGross < 0) $guessGross = $targetNet; // tránh âm
+            }
+            if (!$found) {
+                return [
+                    'actual_bhxh_deduction' => 0,
+                    'actual_tax_paid' => 0,
+                    'actual_net_income' => $targetNet,
+                    'actual_gross_income' => 0,
+                    'error' => 'Không thể tính ngược Gross phù hợp với Net đã nhập!'
+                ];
+            }
+            // 8. Chi phí người sử dụng lao động
+            $bhxh_employer = $insuranceSalary * 0.17;
+            $bhyt_employer = $insuranceSalary * 0.03;
+            $bhtn_employer = $insuranceSalary * 0.01;
+            $bhtnld = $insuranceSalary * 0.005;
+            $tong_chi_phi = $grossIncome + $bhxh_employer + $bhyt_employer + $bhtn_employer + $bhtnld;
+
+            return [
+                'actual_bhxh_deduction' => round($totalInsurance, 0),
+                'actual_tax_paid' => round($taxPaid, 0),
+                'actual_net_income' => round($net, 0),
+                'actual_gross_income' => round($guessGross, 0),
+                'personal_deduction' => $personalDeduction,
+                'dependent_deduction' => $totalDependentDeduction,
+                'region' => $region,
+                'insurance_salary' => $insuranceSalary,
+                'bhxh' => round($bhxh, 0),
+                'bhyt' => round($bhyt, 0),
+                'bhtn' => round($bhtn, 0),
+                'thu_nhap_truoc_thue' => round($grossIncome - $totalInsurance, 0),
+                'giam_tru_ban_than' => $personalDeduction,
+                'giam_tru_phu_thuoc' => $totalDependentDeduction,
+                'thu_nhap_chiu_thue' => round($assessableIncome, 0),
+                'tax_brackets_detail' => $taxBracketsDetail,
+                'bhxh_employer' => round($bhxh_employer, 0),
+                'bhyt_employer' => round($bhyt_employer, 0),
+                'bhtn_employer' => round($bhtn_employer, 0),
+                'bhtnld' => round($bhtnld, 0),
+                'tong_chi_phi' => round($tong_chi_phi, 0),
+                'error' => null
+            ];
+        }
+
+    
+        $minSalaryByRegion = [
+            1 => 4700000, // Vùng I
+            2 => 4200000, // Vùng II
+            3 => 3700000, // Vùng III
+            4 => 3300000, // Vùng IV
+        ];
+        $minSalary = $minSalaryByRegion[$region] ?? 4700000;
+
+        // 2. Xác định lương đóng bảo hiểm
+        if ($insuranceType === 'official') {
+            $insuranceSalary = $grossIncome;
+        } elseif ($insuranceType === 'custom' && $insuranceCustom > 0) {
+            $insuranceSalary = $insuranceCustom;
+        } else {
+            $insuranceSalary = $grossIncome;
+        }
+        // Lương đóng bảo hiểm không được thấp hơn lương tối thiểu vùng
+        $insuranceSalary = max($insuranceSalary, $minSalary);
+        // Trần lương đóng bảo hiểm
+        $bhxhCap = $this->taxParameters[self::MAX_SOCIAL_INSURANCE_KEY] ?? 29800000;
+        $insuranceSalary = min($insuranceSalary, $bhxhCap);
+
+        // 3. Tính các khoản bảo hiểm (chuẩn mới: 8% BHXH, 1.5% BHYT, 1% BHTN)
+        $bhxh = $insuranceSalary * 0.08;
+        $bhyt = $insuranceSalary * 0.015;
+        $bhtn = $insuranceSalary * 0.01;
+        $totalInsurance = $bhxh + $bhyt + $bhtn;
+
+        // 4. Giảm trừ bản thân và người phụ thuộc
+        $personalDeduction = $this->taxParameters[self::PERSONAL_DEDUCTION_KEY] ?? 11000000;
+        $dependentDeduction = $this->taxParameters[self::DEPENDENT_DEDUCTION_KEY] ?? 4400000;
+        $totalDependentDeduction = $dependents * $dependentDeduction;
+
+        // 5. Thu nhập chịu thuế
+        $assessableIncome = $grossIncome - $totalInsurance - $personalDeduction - $totalDependentDeduction - $otherDeductions;
+        if ($assessableIncome < 0) $assessableIncome = 0;
+
+        // 6. Tính thuế TNCN lũy tiến
+        $taxPaid = 0;
+        $taxBracketsDetail = [];
+        if ($incomeType === 'salary') {
+            $taxPaid = 0;
+            $remaining = $assessableIncome;
+            foreach ($this->taxBrackets as $bracket) {
+                $incomeFrom = $bracket['income_from'];
+                $incomeTo = $bracket['income_to'];
+                $taxRate = $bracket['tax_rate'];
+                $label = $bracket['label'] ?? (isset($incomeTo) ? ("Trên " . number_format($incomeFrom) . " đến " . number_format($incomeTo)) : ("Trên " . number_format($incomeFrom)));
+                if ($remaining > 0 && $assessableIncome > $incomeFrom) {
+                    $amountInBracket = 0;
+                    if ($incomeTo === null) {
+                        $amountInBracket = $remaining;
+                    } else {
+                        $amountInBracket = min($remaining, $incomeTo - $incomeFrom);
+                    }
+                    $taxForBracket = $amountInBracket * $taxRate;
+                    $taxBracketsDetail[] = [
+                        'label' => $label,
+                        'rate' => $taxRate * 100,
+                        'amount' => round($taxForBracket, 0),
+                    ];
+                    $taxPaid += $taxForBracket;
+                    $remaining -= $amountInBracket;
+                } else {
+                    $taxBracketsDetail[] = [
+                        'label' => $label,
+                        'rate' => $taxRate * 100,
+                        'amount' => 0,
+                    ];
+                }
+            }
+            $taxPaid = round($taxPaid, 0);
+        }
+
+        // 7. Tính lương thực nhận (Net)
+        $net = $grossIncome - $totalInsurance - $taxPaid - $otherDeductions;
+        if ($net < 0) $net = 0;
+
+        // 8. Chi phí người sử dụng lao động
+        $bhxh_employer = $insuranceSalary * 0.17;
+        $bhyt_employer = $insuranceSalary * 0.03;
+        $bhtn_employer = $insuranceSalary * 0.01;
+        $bhtnld = $insuranceSalary * 0.005;
+        $tong_chi_phi = $grossIncome + $bhxh_employer + $bhyt_employer + $bhtn_employer + $bhtnld;
+
+        return [
+            'actual_bhxh_deduction' => round($totalInsurance, 0),
+            'actual_tax_paid' => round($taxPaid, 0),
+            'actual_net_income' => round($net, 0),
+            'actual_gross_income' => round($grossIncome, 0),
+            'personal_deduction' => $personalDeduction,
+            'dependent_deduction' => $totalDependentDeduction,
+            'region' => $region,
+            'insurance_salary' => $insuranceSalary,
+            'bhxh' => round($bhxh, 0),
+            'bhyt' => round($bhyt, 0),
+            'bhtn' => round($bhtn, 0),
+            'thu_nhap_truoc_thue' => round($grossIncome - $totalInsurance, 0),
+            'giam_tru_ban_than' => $personalDeduction,
+            'giam_tru_phu_thuoc' => $totalDependentDeduction,
+            'thu_nhap_chiu_thue' => round($assessableIncome, 0),
+            'tax_brackets_detail' => $taxBracketsDetail,
+            'bhxh_employer' => round($bhxh_employer, 0),
+            'bhyt_employer' => round($bhyt_employer, 0),
+            'bhtn_employer' => round($bhtn_employer, 0),
+            'bhtnld' => round($bhtnld, 0),
+            'tong_chi_phi' => round($tong_chi_phi, 0),
+            'error' => null
+        ];
+    }
 }
