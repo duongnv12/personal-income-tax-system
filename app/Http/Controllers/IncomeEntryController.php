@@ -21,9 +21,18 @@ class IncomeEntryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $incomeEntries = Auth::user()->incomeEntries()->with('incomeSource')->orderBy('year', 'desc')->orderBy('month', 'desc')->get();
+        $query = Auth::user()->incomeEntries()->with('incomeSource')->orderBy('year', 'desc')->orderBy('month', 'desc');
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('gross_income', 'like', "%$search%")
+                  ->orWhere('year', 'like', "%$search%")
+                  ->orWhere('month', 'like', "%$search%");
+            });
+        }
+        $incomeEntries = $query->paginate(10);
         return view('income-entries.index', compact('incomeEntries'));
     }
 

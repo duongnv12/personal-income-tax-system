@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="w-full mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-100 transform hover:scale-[1.005] transition-all duration-300"> {{-- Thêm border và hiệu ứng hover --}}
                 <div class="p-6 text-gray-900">
                     <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b pb-4">
@@ -18,6 +18,11 @@
                             <i class="fa-solid fa-plus-circle mr-2 text-white"></i> {{ __('Thêm Khoản Thu Nhập Mới') }}
                         </a>
                     </div>
+
+                    <form method="GET" action="{{ route('income-entries.index') }}" class="mb-4">
+                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Tìm kiếm khoản thu nhập..." class="border rounded px-2 py-1">
+                        <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded">Tìm kiếm</button>
+                    </form>
 
                     @if (session('success'))
                         <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md" role="alert">
@@ -42,7 +47,7 @@
                             </div>
                         </div>
                     @else
-                        <div class="overflow-x-auto shadow-md rounded-lg border border-gray-200">
+                        <div class="overflow-x-visible shadow-md rounded-lg border border-gray-200">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-100">
                                     <tr>

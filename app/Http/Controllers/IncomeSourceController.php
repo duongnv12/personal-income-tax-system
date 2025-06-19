@@ -12,10 +12,21 @@ class IncomeSourceController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $incomeSources = Auth::user()->incomeSources()->orderBy('created_at', 'desc')->get();
-        return view('income-sources.index', compact('incomeSources'));
+    $query = IncomeSource::query()->where('user_id', auth()->id());
+
+    if ($request->has('search') && $request->search) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('name', 'like', "%$search%")
+              ->orWhere('description', 'like', "%$search%");
+        });
+    }
+
+    $incomeSources = $query->paginate(10);
+
+    return view('income-sources.index', compact('incomeSources'));
     }
 
     /**
@@ -113,4 +124,5 @@ class IncomeSourceController extends Controller
 
         return redirect()->route('income-sources.index')->with('success', 'Đã xóa nguồn thu nhập và các khoản thu nhập liên quan thành công.');
     }
+    
 }

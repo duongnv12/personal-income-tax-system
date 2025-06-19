@@ -19,6 +19,11 @@
                         </a>
                     </div>
 
+                    <form method="GET" action="{{ route('income-sources.index') }}" class="mb-4">
+                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Tìm kiếm nguồn thu nhập..." class="border rounded px-2 py-1">
+                        <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded">Tìm kiếm</button>
+                    </form>
+
                     @if (session('success'))
                         <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md" role="alert">
                             <p class="font-bold"><i class="fa-solid fa-check-circle mr-2"></i> Thành công!</p>

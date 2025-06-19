@@ -13,9 +13,22 @@ class DependentController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $dependents = Auth::user()->dependents()->orderBy('created_at', 'desc')->get();
+        $query = Auth::user()->dependents()->orderBy('created_at', 'desc');
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('full_name', 'like', "%$search%")
+                  ->orWhere('identification_number', 'like', "%$search%")
+                  ->orWhere('relationship', 'like', "%$search%")
+                  ->orWhere('gross_income', 'like', "%$search%")
+                  ->orWhere('year', 'like', "%$search%")
+                  ->orWhere('month', 'like', "%$search%")
+                  ;
+            });
+        }
+        $dependents = $query->paginate(10);
         return view('dependents.index', compact('dependents'));
     }
 
