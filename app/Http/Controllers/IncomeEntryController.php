@@ -20,18 +20,26 @@ class IncomeEntryController extends Controller
 
     /**
      * Display a listing of the resource.
+     * Đã cập nhật logic tìm kiếm ở đây.
      */
     public function index(Request $request)
     {
         $query = Auth::user()->incomeEntries()->with('incomeSource')->orderBy('year', 'desc')->orderBy('month', 'desc');
-        if ($request->has('search') && $request->search) {
+
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
+                // Giữ lại các điều kiện tìm kiếm cũ
                 $q->where('gross_income', 'like', "%$search%")
                   ->orWhere('year', 'like', "%$search%")
-                  ->orWhere('month', 'like', "%$search%");
+                  ->orWhere('month', 'like', "%$search%")
+                  // THÊM MỚI: Tìm kiếm trong tên của nguồn thu nhập liên quan
+                  ->orWhereHas('incomeSource', function ($subQuery) use ($search) {
+                      $subQuery->where('name', 'like', "%$search%");
+                  });
             });
         }
+
         $incomeEntries = $query->paginate(10);
         return view('income-entries.index', compact('incomeEntries'));
     }
@@ -45,7 +53,6 @@ class IncomeEntryController extends Controller
         if ($incomeSources->isEmpty()) {
             return redirect()->route('income-sources.create')->with('info', 'Bạn cần tạo ít nhất một nguồn thu nhập trước khi thêm khoản thu nhập.');
         }
-        // Đã xóa phần lấy $history
         return view('income-entries.create', compact('incomeSources'));
     }
 
@@ -69,23 +76,23 @@ class IncomeEntryController extends Controller
             'insurance_salary_custom' => 'nullable|string|min:0',
             'gross_income' => 'nullable|string|min:0',
             'net_income' => 'nullable|string|min:0',
+            'dependents' => 'required|integer|min:0',
         ], [
             'income_source_id.required' => 'Nguồn thu nhập là bắt buộc.',
             'income_source_id.exists' => 'Nguồn thu nhập không hợp lệ.',
             'month.required' => 'Tháng là bắt buộc.',
-            'month.integer' => 'Tháng phải là số nguyên.',
             'year.required' => 'Năm là bắt buộc.',
-            'year.integer' => 'Năm phải là số nguyên.',
+            'dependents.required' => 'Số người phụ thuộc là bắt buộc.',
+            'dependents.integer' => 'Số người phụ thuộc phải là số nguyên.',
+            'dependents.min' => 'Số người phụ thuộc không được là số âm.',
         ]);
 
-        // Unformat number strings
+        // Bỏ định dạng tiền tệ trước khi tính toán
         $validatedData['insurance_salary_custom'] = $validatedData['insurance_salary_custom'] ? (float)str_replace(',', '', $validatedData['insurance_salary_custom']) : null;
         $validatedData['gross_income'] = $validatedData['gross_income'] ? (float)str_replace(',', '', $validatedData['gross_income']) : null;
         $validatedData['net_income'] = $validatedData['net_income'] ? (float)str_replace(',', '', $validatedData['net_income']) : null;
         
         $user = Auth::user();
-        $dependentsCount = $user->dependents()->where('status', 'active')->count();
-        $validatedData['dependents'] = $dependentsCount;
         $validatedData['income_type'] = 'salary';
 
         $result = app(\App\Services\TaxCalculationService::class)->calculateMonthlyTaxV2($validatedData);
@@ -105,17 +112,11 @@ class IncomeEntryController extends Controller
                     'net_income' => $result['actual_net_income'] ?? ($validatedData['net_income'] ?? null),
                     'bhxh_deduction' => $result['actual_bhxh_deduction'] ?? null,
                     'tax_paid' => $result['actual_tax_paid'] ?? null,
-                    // 'region' => $validatedData['region'],
-                    // 'insurance_salary_type' => $validatedData['insurance_salary_type'],
-                    // 'insurance_salary_custom' => $validatedData['insurance_salary_custom'] ?? null,
-                    // 'dependents' => $dependentsCount,
-                    // 'calculation_direction' => $validatedData['calculation_direction'],
                 ]
             );
         }
 
         $incomeSources = $user->incomeSources()->get();
-        // Đã xóa phần lấy $history
         
         return view('income-entries.create', [
             'result' => $result,
@@ -125,7 +126,9 @@ class IncomeEntryController extends Controller
         ]);
     }
 
-    // ... các hàm còn lại giữ nguyên ...
+    /**
+     * Show the form for editing the specified resource.
+     */
     public function edit(IncomeEntry $incomeEntry)
     {
         if ($incomeEntry->user_id !== Auth::id()) {
@@ -135,6 +138,9 @@ class IncomeEntryController extends Controller
         return view('income-entries.edit', compact('incomeEntry', 'incomeSources'));
     }
 
+    /**
+     * Update the specified resource in storage.
+     */
     public function update(Request $request, IncomeEntry $incomeEntry)
     {
         if ($incomeEntry->user_id !== Auth::id()) {
@@ -183,6 +189,9 @@ class IncomeEntryController extends Controller
         return redirect()->route('income-entries.index')->with('success', 'Đã cập nhật khoản thu nhập thành công.');
     }
 
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy(IncomeEntry $incomeEntry)
     {
         if ($incomeEntry->user_id !== Auth::id()) {
