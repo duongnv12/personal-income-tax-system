@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Dependent;
 use App\Models\IncomeEntry;
 use App\Models\IncomeSource;
 use App\Services\TaxCalculationService;
@@ -53,7 +54,12 @@ class IncomeEntryController extends Controller
         if ($incomeSources->isEmpty()) {
             return redirect()->route('income-sources.create')->with('info', 'Bạn cần tạo ít nhất một nguồn thu nhập trước khi thêm khoản thu nhập.');
         }
-        return view('income-entries.create', compact('incomeSources'));
+
+        $dependentCount = Dependent::where('user_id', Auth::id())
+            ->where('status', 'active')
+            ->count();
+            
+        return view('income-entries.create', compact('incomeSources', 'dependentCount'));
     }
 
     /**

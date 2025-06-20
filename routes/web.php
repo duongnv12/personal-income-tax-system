@@ -26,13 +26,14 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/dashboard', [UserDashboardController::class, 'index'])->name('dashboard');
-    Route::resource('dependents', DependentController::class)->except(['show']); 
+    Route::resource('dependents', DependentController::class)->except(['show']);
     Route::resource('income-sources', IncomeSourceController::class)->except(['show']);
     Route::resource('income-entries', IncomeEntryController::class)->except(['show']);
     Route::get('/tax-reports/{year?}', [TaxReportController::class, 'showYearlySettlement'])->name('tax.yearly_settlement');
     Route::get('/tax-reports/{year}/export-pdf', [TaxReportController::class, 'exportYearlySettlementPdf'])->name('tax.yearly_settlement.export_pdf');
     Route::get('/tax-reports/{year}/export-excel', [TaxReportController::class, 'exportYearlySettlementExcel'])->name('tax.yearly_settlement.export_excel'); // Route mới
     Route::get('tax-reports/{year}/company/{companyId}/pdf', [TaxReportController::class, 'exportYearlyCompanyIncomePdf'])->name('tax-reports.company-income-pdf');
+    Route::get('tax-reports/{year}/source/{sourceId}/details', [\App\Http\Controllers\TaxReportController::class, 'sourceDetails'])->name('tax-reports.source-details');
 
     // Route cho quản lý Tham số Thuế
     Route::get('/tax-parameters', [TaxParameterController::class, 'index'])->name('tax_parameters.index');
@@ -51,10 +52,11 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::resource('tax-brackets', TaxBracketController::class);
 
     Route::get('/tax-reports/{year}/source/{source}/details', [App\Http\Controllers\TaxReportController::class, 'getSourceDetailsJson'])->name('tax-reports.source-details');
+    Route::get('/income-entries/create', [IncomeEntryController::class, 'create'])->name('income-entries.create');
+Route::post('/income-entries', [IncomeEntryController::class, 'store'])->name('income-entries.store');
 
 });
 
-Route::get('/income-entries/create', [IncomeEntryController::class, 'create'])->name('income-entries.create');
-Route::post('/income-entries', [IncomeEntryController::class, 'store'])->name('income-entries.store');
+
 
 require __DIR__.'/auth.php';

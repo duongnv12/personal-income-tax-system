@@ -88,16 +88,21 @@
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-red-600">{{ number_format($entry->tax_paid ?? 0, 0, ',', '.') }} VNĐ</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right font-bold text-blue-700">{{ number_format($entry->net_income ?? 0, 0, ',', '.') }} VNĐ</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <a href="{{ route('income-entries.edit', $entry) }}" class="text-indigo-600 hover:text-indigo-900 mr-4 inline-flex items-center">
-                                                    <i class="fa-solid fa-edit mr-1"></i> Sửa
-                                                </a>
-                                                <form action="{{ route('income-entries.destroy', $entry) }}" method="POST" class="inline-block" onsubmit="return confirm('Bạn có chắc chắn muốn xóa khoản thu nhập này? Hành động này không thể hoàn tác.');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-900 inline-flex items-center">
-                                                        <i class="fa-solid fa-trash-alt mr-1"></i> Xóa
-                                                    </button>
-                                                </form>
+                                                <div class="flex items-center justify-end space-x-2">
+                                                    <!-- <button onclick="showDetails({{ $entry->id }})" class="text-blue-600 hover:text-blue-900" title="Xem chi tiết">
+                                                        <i class="fa-solid fa-eye"></i>
+                                                    </button> -->
+                                                    <a href="{{ route('income-entries.edit', $entry->id) }}" class="text-indigo-600 hover:text-indigo-900" title="Sửa">
+                                                        <i class="fa-solid fa-pen-to-square"></i>
+                                                    </a>
+                                                    <form action="{{ route('income-entries.destroy', $entry->id) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa khoản thu nhập này?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="text-red-600 hover:text-red-900" title="Xóa">
+                                                            <i class="fa-solid fa-trash-can"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -112,4 +117,98 @@
             </div>
         </div>
     </div>
+    <x-modal name="calculation-result" :show="false" maxWidth="2xl" focusable>
+        <div class="p-6" id="details-modal-content">
+            
+        </div>
+    </x-modal>
+
+    <script>
+        function showDetails(entryId) {
+            fetch(`/income-entries/show/${entryId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const result = data.result;
+                    if (result) {
+                        const content = `
+                            <div class="flex justify-between items-start">
+                                <h2 class="text-2xl font-bold text-gray-900">
+                                    <i class="fa-solid fa-calculator mr-2 text-green-600"></i> Kết quả tính lương chi tiết
+                                </h2>
+                                <button x-on:click="$dispatch('close')" class="text-gray-400 hover:text-gray-600">
+                                    <span class="sr-only">Close</span>
+                                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                             <div class="mt-6">
+                                <h3 class="font-semibold text-lg mb-2 text-gray-800">Bảng tóm tắt</h3>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center p-4 bg-gray-50 rounded-lg border">
+                                    <div>
+                                        <p class="text-sm text-gray-600">Lương Gross</p>
+                                        <p class="font-bold text-lg text-gray-800">${(result.actual_gross_income || 0).toLocaleString('vi-VN')}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Bảo hiểm</p>
+                                        <p class="font-bold text-lg text-red-600">-${(result.actual_bhxh_deduction || 0).toLocaleString('vi-VN')}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Thuế TNCN</p>
+                                        <p class="font-bold text-lg text-red-600">-${(result.actual_tax_paid || 0).toLocaleString('vi-VN')}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Lương Net</p>
+                                        <p class="font-bold text-lg text-green-700">${(result.actual_net_income || 0).toLocaleString('vi-VN')}</p>
+                                    </div>
+                                </div>
+
+                                <h4 class="font-semibold text-gray-800 mt-6 mb-2">Diễn giải chi tiết (VND)</h4>
+                                <div class="border rounded-lg overflow-hidden">
+                                    <table class="min-w-full">
+                                        <tbody class="divide-y divide-gray-200">
+                                            <tr class="bg-white"><td class="px-4 py-2">Lương GROSS</td><td class="px-4 py-2 text-right font-semibold">${(result.actual_gross_income || 0).toLocaleString('vi-VN')}</td></tr>
+                                            <tr class="bg-gray-50"><td class="px-4 py-2 pl-6">Bảo hiểm xã hội (8%)</td><td class="px-4 py-2 text-right">-${(result.bhxh || 0).toLocaleString('vi-VN')}</td></tr>
+                                            <tr class="bg-white"><td class="px-4 py-2 pl-6">Bảo hiểm y tế (1.5%)</td><td class="px-4 py-2 text-right">-${(result.bhyt || 0).toLocaleString('vi-VN')}</td></tr>
+                                            <tr class="bg-gray-50"><td class="px-4 py-2 pl-6">Bảo hiểm thất nghiệp (1%)</td><td class="px-4 py-2 text-right">-${(result.bhtn || 0).toLocaleString('vi-VN')}</td></tr>
+                                            <tr class="bg-white"><td class="px-4 py-2">Thu nhập trước thuế</td><td class="px-4 py-2 text-right font-semibold">${(result.thu_nhap_truoc_thue || 0).toLocaleString('vi-VN')}</td></tr>
+                                            <tr class="bg-gray-50"><td class="px-4 py-2">Giảm trừ bản thân</td><td class="px-4 py-2 text-right">-${(result.giam_tru_ban_than || 0).toLocaleString('vi-VN')}</td></tr>
+                                            <tr class="bg-white"><td class="px-4 py-2">Giảm trừ người phụ thuộc</td><td class="px-4 py-2 text-right">-${(result.giam_tru_phu_thuoc || 0).toLocaleString('vi-VN')}</td></tr>
+                                            <tr class="bg-gray-50"><td class="px-4 py-2 font-bold">Thu nhập tính thuế</td><td class="px-4 py-2 text-right font-bold">${(result.thu_nhap_chiu_thue || 0).toLocaleString('vi-VN')}</td></tr>
+                                            <tr class="bg-white"><td class="px-4 py-2">Thuế thu nhập cá nhân (*)</td><td class="px-4 py-2 text-right font-semibold text-red-600">-${(result.actual_tax_paid || 0).toLocaleString('vi-VN')}</td></tr>
+                                            <tr class="bg-green-100"><td class="px-4 py-2 font-extrabold text-green-800">Lương NET (Thực nhận)</td><td class="px-4 py-2 text-right font-extrabold text-lg text-green-800">${(result.actual_net_income || 0).toLocaleString('vi-VN')}</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                        document.getElementById('details-modal-content').innerHTML = content;
+                        window.dispatchEvent(new CustomEvent('open-modal', { detail: 'calculation-result' }));
+                    }
+                });
+        }
+
+        function sourceDetailsModal() {
+            return {
+                isLoading: false,
+                details: null,
+                async fetchSourceDetails(year, sourceId) {
+                    this.isLoading = true;
+                    this.details = null;
+                    try {
+                        const res = await fetch(`/tax-reports/${year}/source/${sourceId}/details`);
+                        this.details = await res.json();
+                    } catch (e) {
+                        this.details = null;
+                    }
+                    this.isLoading = false;
+                    window.dispatchEvent(new CustomEvent('open-modal', { detail: 'source-details-modal' }));
+                },
+                formatCurrency(val) {
+                    if (val == null) return '-';
+                    return Number(val).toLocaleString('vi-VN');
+                }
+            }
+        }
+    </script>
 </x-app-layout>

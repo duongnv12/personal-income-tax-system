@@ -12,15 +12,23 @@ class IncomeEntry extends Model
     protected $fillable = [
         'user_id',
         'income_source_id',
-        'income_type', // Thêm vào đây
         'year',
         'month',
         'entry_type',
         'gross_income',
+        'net_income',
+        'tax_paid',
         'bhxh_deduction',
         'other_deductions',
-        'tax_paid',
-        'net_income',
+        'income_type'
+    ];
+
+    protected $casts = [
+        'gross_income' => 'float',
+        'net_income' => 'float',
+        'tax_paid' => 'float',
+        'bhxh_deduction' => 'float',
+        'other_deductions' => 'float',
     ];
 
     public function user()
