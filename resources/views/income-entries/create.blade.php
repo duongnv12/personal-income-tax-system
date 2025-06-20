@@ -109,7 +109,7 @@
                             
                             <div>
                                 <x-input-label for="dependents" :value="__('Số người phụ thuộc')" />
-                                <x-text-input id="dependents" class="block mt-1 w-full" type="number" name="dependents" :value="old('dependents', request('dependents', 0)) ?? ($oldInput['dependents'] ?? 0)" min="0" required />
+                                <x-text-input id="dependents" class="block mt-1 w-full" type="number" name="dependents" :value="old('dependents', $dependentCount ?? 0)" min="0" required />
                                 <x-input-error :messages="$errors->get('dependents')" class="mt-2" />
                                 <p class="text-sm text-gray-500 mt-1">Nhập số người phụ thuộc bạn muốn tính giảm trừ cho khoản thu nhập này.</p>
                             </div>

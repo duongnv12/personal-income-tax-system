@@ -179,13 +179,13 @@
                                 @endforeach
                             </div>
                         </div>
-                    @endif {{-- <-- THẺ @endif BỊ THIẾU ĐÃ ĐƯỢC THÊM VÀO ĐÂY --}}
+                    @endif
                 </div>
 
                  <x-modal name="source-details-modal" maxWidth="4xl">
                     <div class="p-6">
                         <div class="flex justify-between items-start mb-4">
-                            <h2 class="text-xl font-bold text-gray-900" x-text="`Chi tiết ${details?.summary?.source_name || '...'}`"></h2>
+                            <h2 class="text-xl font-bold text-gray-900" x-text="`Chi tiết: ${details?.summary?.source_name || '...'}`"></h2>
                             <button @click="$dispatch('close-modal', 'source-details-modal')" class="text-gray-400 hover:text-gray-600">&times;</button>
                         </div>
                 
@@ -196,17 +196,26 @@
                         <div x-show="!isLoading && details">
                             {{-- Tóm tắt trong Modal --}}
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                <div class="p-3 bg-gray-50 rounded-lg border">
-                                    <p class="text-sm text-gray-600">Tổng Gross</p>
-                                    <p class="text-xl font-bold text-gray-800" x-text="formatCurrency(details.summary.total_gross)"></p>
+                                <div class="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border flex items-center space-x-3">
+                                    <span class="flex-shrink-0 text-blue-600 text-2xl"><i class="fa-solid fa-sack-dollar"></i></span>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Tổng Gross</p>
+                                        <p class="text-xl font-bold text-gray-800" x-text="details && formatCurrency(details.summary.total_gross)"></p>
+                                    </div>
                                 </div>
-                                <div class="p-3 bg-gray-50 rounded-lg border">
-                                    <p class="text-sm text-gray-600">Tổng BHXH</p>
-                                    <p class="text-xl font-bold text-gray-800" x-text="formatCurrency(details.summary.total_bhxh)"></p>
+                                <div class="p-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border flex items-center space-x-3">
+                                    <span class="flex-shrink-0 text-purple-600 text-2xl"><i class="fa-solid fa-hand-holding-dollar"></i></span>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Tổng BHXH</p>
+                                        <p class="text-xl font-bold text-gray-800" x-text="details && formatCurrency(details.summary.total_bhxh)"></p>
+                                    </div>
                                 </div>
-                                <div class="p-3 bg-gray-50 rounded-lg border">
-                                    <p class="text-sm text-gray-600">Tổng thuế đã nộp</p>
-                                    <p class="text-xl font-bold text-red-600" x-text="formatCurrency(details.summary.total_tax_paid)"></p>
+                                <div class="p-3 bg-gradient-to-br from-red-50 to-red-100 rounded-lg border flex items-center space-x-3">
+                                    <span class="flex-shrink-0 text-red-600 text-2xl"><i class="fa-solid fa-money-check-dollar"></i></span>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Tổng thuế đã nộp</p>
+                                        <p class="text-xl font-bold text-red-600" x-text="details && formatCurrency(details.summary.total_tax_paid)"></p>
+                                    </div>
                                 </div>
                             </div>
                 
@@ -216,20 +225,28 @@
                                     <thead class="bg-gray-100 sticky top-0">
                                         <tr>
                                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kỳ</th>
-                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Gross</th>
-                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">BHXH</th>
-                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Thuế tạm nộp</th>
-                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Net</th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                                                <i class="fa-solid fa-money-bill-wave mr-1 text-green-600"></i> Gross income
+                                            </th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                                                <i class="fa-solid fa-shield-halved mr-1 text-blue-600"></i> BHXH
+                                            </th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                                                <i class="fa-solid fa-file-invoice-dollar mr-1 text-red-600"></i> Thuế tạm nộp
+                                            </th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                                                <i class="fa-solid fa-wallet mr-1 text-indigo-600"></i> Net income
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-200">
                                         <template x-for="entry in details.entries" :key="entry.id">
                                             <tr class="hover:bg-gray-50">
                                                 <td class="px-4 py-2" x-text="entry.month ? `Tháng ${entry.month}` : 'Cả năm'"></td>
-                                                <td class="px-4 py-2 text-right" x-text="formatCurrency(entry.gross_income)"></td>
-                                                <td class="px-4 py-2 text-right" x-text="formatCurrency(entry.bhxh_deduction)"></td>
-                                                <td class="px-4 py-2 text-right" x-text="formatCurrency(entry.tax_paid)"></td>
-                                                <td class="px-4 py-2 text-right font-semibold" x-text="formatCurrency(entry.net_income)"></td>
+                                                <td class="px-4 py-2 text-right" x-text="details && formatCurrency(entry.gross_income)"></td>
+                                                <td class="px-4 py-2 text-right" x-text="details && formatCurrency(entry.bhxh_deduction)"></td>
+                                                <td class="px-4 py-2 text-right" x-text="details && formatCurrency(entry.tax_paid)"></td>
+                                                <td class="px-4 py-2 text-right font-semibold" x-text="details && formatCurrency(entry.net_income)"></td>
                                             </tr>
                                         </template>
                                     </tbody>
@@ -242,48 +259,29 @@
             </div>
         </div>
     </div>
-    @push('scripts')
-    <script>
-        function sourceDetailsModal() {
-            return {
-                isLoading: false,
-                details: null,
-                fetchSourceDetails(year, sourceId) {
-                    if (!sourceId) return;
-                    this.isLoading = true;
+</div>
+<script>
+    function sourceDetailsModal() {
+        return {
+            isLoading: false,
+            details: null,
+            async fetchSourceDetails(year, sourceId) {
+                this.isLoading = true;
+                this.details = null;
+                try {
+                    const res = await fetch(`/tax-reports/${year}/source/${sourceId}/details`);
+                    this.details = await res.json();
+                } catch (e) {
                     this.details = null;
-    
-                    this.$dispatch('open-modal', 'source-details-modal');
-
-                    fetch(`/tax-reports/${year}/source/${sourceId}/details`, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json',
-                        }
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        this.details = data;
-                        this.isLoading = false;
-                    })
-                    .catch(error => {
-                        console.error('Error fetching source details:', error);
-                        this.isLoading = false;
-                        this.$dispatch('close-modal', 'source-details-modal');
-                        alert('Không thể tải chi tiết. Vui lòng thử lại.');
-                    });
-                },
-                formatCurrency(value) {
-                    if (value === null || typeof value === 'undefined') return '0';
-                    return new Intl.NumberFormat('vi-VN').format(value);
                 }
+                this.isLoading = false;
+                window.dispatchEvent(new CustomEvent('open-modal', { detail: 'source-details-modal' }));
+            },
+            formatCurrency(val) {
+                if (val == null) return '-';
+                return Number(val).toLocaleString('vi-VN');
             }
         }
-    </script>
-    @endpush
+    }
+</script>
 </x-app-layout>

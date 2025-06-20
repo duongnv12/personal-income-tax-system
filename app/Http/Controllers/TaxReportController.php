@@ -232,4 +232,32 @@ class TaxReportController extends Controller
             'entries' => $entries,
         ]);
     }
+
+    /**
+     * API: Chi tiết nguồn thu nhập cho modal popup báo cáo thuế năm
+     */
+    public function sourceDetails(Request $request, $year, $sourceId)
+    {
+        $user = Auth::user();
+        $source = \App\Models\IncomeSource::findOrFail($sourceId);
+        if ($source->user_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+        $entries = $source->incomeEntries()
+            ->where('year', $year)
+            ->orderBy('month', 'asc')
+            ->get();
+        $summary = [
+            'source_name' => $source->name,
+            'total_gross' => $entries->sum('gross_income'),
+            'total_bhxh' => $entries->sum('bhxh_deduction'),
+            'total_other_deductions' => $entries->sum('other_deductions'),
+            'total_personal_deductions' => $entries->sum('personal_deductions'), // Nếu có
+            'total_tax_paid' => $entries->sum('tax_paid'),
+        ];
+        return response()->json([
+            'summary' => $summary,
+            'entries' => $entries,
+        ]);
+    }
 }
