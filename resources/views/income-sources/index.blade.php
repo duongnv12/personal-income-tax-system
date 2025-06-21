@@ -19,9 +19,20 @@
                         </a>
                     </div>
 
-                    <form method="GET" action="{{ route('income-sources.index') }}" class="mb-4">
-                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Tìm kiếm nguồn thu nhập..." class="border rounded px-2 py-1">
-                        <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded">Tìm kiếm</button>
+                    <form method="GET" action="{{ route('income-sources.index') }}" class="mb-6 flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </span>
+                            <input type="text" name="search" value="{{ request('search') }}"
+                                placeholder="Tìm kiếm nguồn thu nhập..."
+                                class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out outline-none hover:border-indigo-400"
+                                autocomplete="off">
+                        </div>
+                        <button type="submit"
+                            class="inline-flex items-center px-4 py-2 bg-blue-500 border border-transparent rounded-lg font-semibold text-sm text-white uppercase tracking-widest hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md transform hover:scale-105">
+                            <i class="fa-solid fa-search mr-2"></i> Tìm kiếm
+                        </button>
                     </form>
 
                     @if (session('success'))

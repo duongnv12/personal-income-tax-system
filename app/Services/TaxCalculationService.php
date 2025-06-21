@@ -133,6 +133,13 @@ class TaxCalculationService
     public function calculateMonthlyTax(IncomeEntry $incomeEntry): array
     {
         $grossIncome = $incomeEntry->gross_income;
+        $entryType = $incomeEntry->entry_type ?? 'monthly'; // Thêm dòng này
+
+        // Nếu là yearly nhưng chỉ nhập lương tháng, tự động nhân 12
+        if ($entryType === 'yearly' && $incomeEntry->income_type === 'salary' && $incomeEntry->month) {
+            $grossIncome = $grossIncome * 12;
+        }
+
         $otherDeductions = $incomeEntry->other_deductions ?? 0;
         $userId = $incomeEntry->user_id;
         $incomeType = $incomeEntry->income_type;

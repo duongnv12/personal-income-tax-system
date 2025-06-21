@@ -10,7 +10,7 @@
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg" x-data="sourceDetailsModal()">
                 <div class="p-6 text-gray-900">
 
-                    <div class="mb-8 flex flex-col md:flex-row items-center justify-between border-b pb-4">
+                    <div class="mb-8 flex flex-col md:flex-row items-center justify-between border-b pb-4 animate-fade-in-down">
                         <h3 class="text-2xl font-extrabold text-gray-800 mb-4 md:mb-0">
                             Quyết toán thuế TNCN năm <span class="text-blue-700">{{ $selectedYear }}</span>
                         </h3>
@@ -30,57 +30,57 @@
                                 @endforeach
                             </select>
                             <a href="{{ route('tax.yearly_settlement.export_pdf', $selectedYear) }}"
-                            class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
+                            class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md hover:scale-105">
                                 <i class="fa-solid fa-file-pdf mr-2"></i> Xuất PDF
                             </a>
                             <a href="{{ route('tax.yearly_settlement.export_excel', $selectedYear) }}"
-                            class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
+                            class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md hover:scale-105">
                                 <i class="fa-solid fa-file-excel mr-2"></i> Xuất Excel
                             </a>
                         </div>
                     </div>
 
                     {{-- Summary Cards --}}
-                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center animate-fade-in-down">
                         <i class="fa-solid fa-chart-line mr-2 text-blue-500"></i> Tổng quan tài chính
                     </h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg shadow-md flex items-start space-x-4">
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg shadow-md flex items-start space-x-4 transition-transform duration-300 hover:scale-105 hover:shadow-lg animate-fade-in-up">
                             <div class="flex-shrink-0 text-blue-600 text-3xl"><i class="fa-solid fa-sack-dollar"></i></div>
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Tổng thu nhập Gross chịu thuế:</p>
                                 <p class="font-bold text-2xl text-blue-900 mt-1">{{ number_format($yearlyTaxSettlement['total_gross_income'], 0, ',', '.') }} VNĐ</p>
                             </div>
                         </div>
-                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg shadow-md flex items-start space-x-4">
+                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg shadow-md flex items-start space-x-4 transition-transform duration-300 hover:scale-105 hover:shadow-lg animate-fade-in-up delay-100">
                             <div class="flex-shrink-0 text-purple-600 text-3xl"><i class="fa-solid fa-hand-holding-dollar"></i></div>
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Tổng giảm trừ BHXH & khác:</p>
                                 <p class="font-bold text-2xl text-purple-900 mt-1">{{ number_format($yearlyTaxSettlement['total_bhxh_deduction'] + $yearlyTaxSettlement['total_other_deductions'], 0, ',', '.') }} VNĐ</p>
                             </div>
                         </div>
-                        <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-lg shadow-md flex items-start space-x-4">
+                        <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-lg shadow-md flex items-start space-x-4 transition-transform duration-300 hover:scale-105 hover:shadow-lg animate-fade-in-up delay-200">
                             <div class="flex-shrink-0 text-indigo-600 text-3xl"><i class="fa-solid fa-users-line"></i></div>
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Tổng giảm trừ gia cảnh:</p>
                                 <p class="font-bold text-2xl text-indigo-900 mt-1">{{ number_format($yearlyTaxSettlement['total_personal_deductions'], 0, ',', '.') }} VNĐ</p>
                             </div>
                         </div>
-                        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-lg shadow-md flex items-start space-x-4">
+                        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-lg shadow-md flex items-start space-x-4 transition-transform duration-300 hover:scale-105 hover:shadow-lg animate-fade-in-up delay-300">
                             <div class="flex-shrink-0 text-yellow-600 text-3xl"><i class="fa-solid fa-file-invoice"></i></div>
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Thu nhập tính thuế cả năm:</p>
                                 <p class="font-bold text-2xl text-yellow-900 mt-1">{{ number_format($yearlyTaxSettlement['total_taxable_income_yearly'], 0, ',', '.') }} VNĐ</p>
                             </div>
                         </div>
-                        <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-lg shadow-md flex items-start space-x-4">
+                        <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-lg shadow-md flex items-start space-x-4 transition-transform duration-300 hover:scale-105 hover:shadow-lg animate-fade-in-up delay-400">
                             <div class="flex-shrink-0 text-red-600 text-3xl"><i class="fa-solid fa-money-check-dollar"></i></div>
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Tổng thuế đã tạm nộp:</p>
                                 <p class="font-bold text-2xl text-red-900 mt-1">{{ number_format($yearlyTaxSettlement['total_tax_paid_provisional'], 0, ',', '.') }} VNĐ</p>
                             </div>
                         </div>
-                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg shadow-md flex items-start space-x-4">
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg shadow-md flex items-start space-x-4 transition-transform duration-300 hover:scale-105 hover:shadow-lg animate-fade-in-up delay-500">
                             <div class="flex-shrink-0 text-green-600 text-3xl"><i class="fa-solid fa-file-circle-check"></i></div>
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Tổng thuế phải nộp cả năm:</p>
@@ -91,16 +91,16 @@
                     
                     {{-- Bảng tổng hợp theo từng nguồn thu nhập --}}
                     @if(isset($breakdownBySource))
-                    <h3 class="text-xl font-bold text-gray-800 mt-10 mb-6 flex items-center border-b pb-3">
+                    <h3 class="text-xl font-bold text-gray-800 mt-10 mb-6 flex items-center border-b pb-3 animate-fade-in-down">
                         <i class="fa-solid fa-chart-pie mr-2 text-teal-500"></i>
                         Tổng hợp theo từng Nguồn Thu Nhập
                     </h3>
                     @if ($breakdownBySource->isEmpty())
-                        <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4" role="alert">
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 animate-fade-in-up" role="alert">
                             <p>Không có dữ liệu nguồn thu nhập để tổng hợp cho năm {{ $selectedYear }}.</p>
                         </div>
                     @else
-                        <div class="overflow-x-auto shadow-md rounded-lg">
+                        <div class="overflow-x-auto shadow-md rounded-lg animate-fade-in-up">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-100">
                                     <tr>
@@ -113,7 +113,7 @@
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     @foreach ($breakdownBySource as $sourceId => $source)
-                                        <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
+                                        <tr class="hover:bg-gray-50 transition duration-150 ease-in-out hover:scale-[1.01]">
                                             <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-800">{{ $source['source_name'] }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-gray-600">
                                                 @switch($source['income_type'])
@@ -126,7 +126,7 @@
                                             <td class="px-6 py-4 whitespace-nowrap text-right font-semibold">{{ number_format($source['total_gross'], 0, ',', '.') }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-red-600">{{ number_format($source['total_tax_paid'], 0, ',', '.') }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button type="button" @click="fetchSourceDetails({{ $selectedYear }}, {{ $sourceId }})" class="text-indigo-600 hover:text-indigo-900 font-semibold hover:underline">
+                                                <button type="button" @click="fetchSourceDetails({{ $selectedYear }}, {{ $sourceId }})" class="text-indigo-600 hover:text-indigo-900 font-semibold hover:underline transition duration-150 hover:scale-110">
                                                     Xem chi tiết
                                                 </button>
                                             </td>
@@ -147,7 +147,7 @@
                         @else
                             tax-status tax-status-blue
                         @endif
-                        p-6 rounded-lg font-extrabold text-xl md:text-2xl text-center border-l-4 shadow-md transition-all duration-300 transform hover:scale-[1.01]">
+                        p-6 rounded-lg font-extrabold text-xl md:text-2xl text-center border-l-4 shadow-md transition-all duration-300 transform hover:scale-[1.03] animate-fade-in-up">
                         @if ($yearlyTaxSettlement['tax_to_pay_or_refund'] > 0)
                             <i class="fa-solid fa-circle-exclamation mr-3"></i> Số thuế còn phải nộp: <span class="text-red-900">{{ number_format($yearlyTaxSettlement['tax_to_pay_or_refund'], 0, ',', '.') }} VNĐ</span>
                         @elseif ($yearlyTaxSettlement['tax_to_pay_or_refund'] < 0)
@@ -157,8 +157,8 @@
                         @endif
                     </div>
 
-                                        {{-- Biểu đồ so sánh các khoản giữa các năm --}}
-                    <div class="my-10 bg-white rounded-xl shadow p-6">
+                    {{-- Biểu đồ so sánh các khoản giữa các năm --}}
+                    <div class="my-10 bg-white rounded-xl shadow p-6 animate-fade-in-up">
                         <h3 class="text-lg font-bold mb-4 flex items-center">
                             <i class="fa-solid fa-chart-line mr-2 text-blue-500"></i>
                             So sánh các khoản giữa các năm
@@ -296,7 +296,7 @@
                     @endphp
 
                     @if ($companies->count())
-                        <div class="mt-8 pt-4 border-t border-gray-200">
+                        <div class="mt-8 pt-4 border-t border-gray-200 animate-fade-in-up">
                             <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
                                 <i class="fa-solid fa-building mr-2 text-indigo-500"></i> Xuất báo cáo theo công ty
                             </h3>
@@ -305,7 +305,7 @@
                                 @foreach ($companies as $company)
                                     @if ($company)
                                     <a href="{{ route('tax-reports.company-income-pdf', ['year' => $selectedYear, 'companyId' => $company->id]) }}"
-                                       class="inline-flex items-center px-5 py-2 bg-indigo-600 border border-transparent rounded-full font-semibold text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
+                                       class="inline-flex items-center px-5 py-2 bg-indigo-600 border border-transparent rounded-full font-semibold text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md hover:scale-105">
                                         <i class="fa-solid fa-file-export mr-2"></i> {{ $company->name }}
                                     </a>
                                     @endif
@@ -313,7 +313,6 @@
                             </div>
                         </div>
                     @endif
-
 
                 </div>
 
@@ -408,7 +407,7 @@
         transform: scale(1);
     }
     .tax-status:hover {
-        transform: scale(1.01);
+        transform: scale(1.03);
     }
     .tax-status-red {
         background-color: #fee2e2;
@@ -425,6 +424,26 @@
         color: #1e40af;
         border-color: #93c5fd;
     }
+    /* Hiệu ứng động fade-in */
+    @keyframes fade-in-up {
+        0% { opacity: 0; transform: translateY(30px);}
+        100% { opacity: 1; transform: translateY(0);}
+    }
+    @keyframes fade-in-down {
+        0% { opacity: 0; transform: translateY(-30px);}
+        100% { opacity: 1; transform: translateY(0);}
+    }
+    .animate-fade-in-up {
+        animation: fade-in-up 0.7s cubic-bezier(0.4,0,0.2,1) both;
+    }
+    .animate-fade-in-down {
+        animation: fade-in-down 0.7s cubic-bezier(0.4,0,0.2,1) both;
+    }
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-300 { animation-delay: 0.3s; }
+    .delay-400 { animation-delay: 0.4s; }
+    .delay-500 { animation-delay: 0.5s; }
 </style>
 <script>
     function sourceDetailsModal() {

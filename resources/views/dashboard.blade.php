@@ -114,15 +114,17 @@
                     </div>
 
                     {{-- Phần thông báo số thuế còn phải nộp/được hoàn lại --}}
-                    <div class="mb-8 p-6 rounded-xl font-bold text-center shadow-lg transform hover:scale-105 transition-transform duration-300
-                        @if ($yearlyTaxSettlement['tax_to_pay_or_refund'] > 0)
-                            bg-gradient-to-r from-orange-200 to-orange-100 text-orange-900
-                        @elseif ($yearlyTaxSettlement['tax_to_pay_or_refund'] < 0)
-                            bg-gradient-to-r from-teal-200 to-teal-100 text-teal-900
-                        @else
-                            bg-gradient-to-r from-gray-200 to-gray-100 text-gray-800
-                        @endif
-                    ">
+                    @php
+                        $taxNoticeClass = 'mb-8 p-6 rounded-xl font-bold text-center shadow-lg transition-transform duration-200 hover:scale-[1.02] ';
+                        if ($yearlyTaxSettlement['tax_to_pay_or_refund'] > 0) {
+                            $taxNoticeClass .= 'bg-gradient-to-r from-orange-200 to-orange-100 text-orange-900';
+                        } elseif ($yearlyTaxSettlement['tax_to_pay_or_refund'] < 0) {
+                            $taxNoticeClass .= 'bg-gradient-to-r from-teal-200 to-teal-100 text-teal-900';
+                        } else {
+                            $taxNoticeClass .= 'bg-gradient-to-r from-gray-200 to-gray-100 text-gray-800';
+                        }
+                    @endphp
+                    <div class="{{ $taxNoticeClass }}">
                         @if ($yearlyTaxSettlement['tax_to_pay_or_refund'] > 0)
                             <p class="text-2xl mb-2 flex items-center justify-center">
                                 <i class="fa-solid fa-arrow-circle-up mr-3 text-red-600"></i> Số thuế còn phải nộp: <span class="ml-2">{{ number_format($yearlyTaxSettlement['tax_to_pay_or_refund'], 0, ',', '.') }} VNĐ</span>
@@ -136,9 +138,13 @@
                                 <i class="fa-solid fa-circle-check mr-3 text-gray-600"></i> Bạn không có số thuế phải nộp thêm hoặc được hoàn lại trong năm {{ $yearlyTaxSettlement['year'] }}.
                             </p>
                         @endif
-                        <p class="mt-4 text-sm text-gray-700">
-                            <a href="{{ route('tax.yearly_settlement', $yearlyTaxSettlement['year']) }}" class="text-blue-700 hover:text-blue-900 underline font-semibold">Xem chi tiết báo cáo năm {{ $yearlyTaxSettlement['year'] }} <i class="fa-solid fa-arrow-right ml-1"></i></a>
-                        </p>
+                        <div class="mt-6 flex justify-center">
+                            <a href="{{ route('tax.yearly_settlement', $yearlyTaxSettlement['year']) }}"
+                               class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition ease-in-out duration-150 group">
+                                <span>Xem chi tiết báo cáo năm {{ $yearlyTaxSettlement['year'] }}</span>
+                                <i class="fa-solid fa-arrow-right ml-3 transition-transform duration-200 group-hover:translate-x-1"></i>
+                            </a>
+                        </div>
                     </div>
 
                    

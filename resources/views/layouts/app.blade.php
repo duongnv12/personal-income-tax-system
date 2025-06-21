@@ -17,25 +17,36 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    {{-- Thêm các style hoặc script bạn muốn áp dụng toàn cục cho giao diện hiện đại hơn --}}
     <style>
-        /* Các tùy chỉnh CSS nhỏ để tăng tính hiện đại */
         body {
-            /* Ví dụ: Làm mịn font chữ */
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%);
+            /* Màu nền gradient nhẹ */
+        }
+        .main-bg {
+            background: rgba(255,255,255,0.95);
+            /* Nền trắng mờ cho nội dung chính */
+            min-height: 100vh;
+        }
+        /* Giảm khoảng cách phía trên nếu cần */
+        .custom-header {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+        }
+        /* Tùy chỉnh shadow cho header */
+        header.bg-white {
+            box-shadow: 0 2px 8px 0 rgba(99,102,241,0.08);
         }
     </style>
 </head>
 <body class="font-sans antialiased">
-    <div class="min-h-screen bg-gray-100">
-        {{-- Navigation của Breeze (bạn sẽ cập nhật file này) --}}
+    <div class="main-bg">
         @include('layouts.navigation')
 
-        {{-- Page Heading (sử dụng slot $header từ các view con) --}}
         @isset($header)
-            <header class="bg-white shadow-md"> {{-- Dùng shadow-md hoặc shadow-lg để header nổi bật hơn --}}
-                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <header class="bg-white shadow-md custom-header">
+                <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8"> {{-- Giảm py-6 thành py-3 --}}
                     {{ $header }}
                 </div>
             </header>
