@@ -46,6 +46,17 @@ class TaxReportController extends Controller
             // THÊM MỚI: Lấy dữ liệu chi tiết theo từng nguồn
             $breakdownBySource = $this->taxService->getYearlyBreakdownBySource($user, $selectedYear);
 
+            // THÊM MỚI: Lấy dữ liệu nhiều năm cho biểu đồ
+            $availableYears = $user->incomeEntries()
+                               ->selectRaw('DISTINCT year')
+                               ->orderBy('year', 'desc')
+                               ->pluck('year')
+                               ->toArray();
+            $multiYearStats = [];
+            foreach ($availableYears as $y) {
+                $multiYearStats[$y] = $this->taxService->calculateYearlyTaxSettlement($user, $y);
+            }
+
         } catch (\Exception $e) {
             Log::error("Lỗi khi tính toán quyết toán thuế cho người dùng ID {$user->id} năm {$selectedYear}: " . $e->getMessage());
             return redirect()->route('dashboard')->with('error', 'Có lỗi xảy ra khi lấy dữ liệu quyết toán thuế.');
@@ -69,7 +80,8 @@ class TaxReportController extends Controller
             'yearlyTaxSettlement' => $yearlyTaxSettlement,
             'selectedYear' => $selectedYear,
             'availableYears' => $availableYears,
-            'breakdownBySource' => $breakdownBySource, // Gửi dữ liệu mới sang view
+            'breakdownBySource' => $breakdownBySource,
+            'multiYearStats' => $multiYearStats, // THÊM DÒNG NÀY
         ]);
     }
 
@@ -258,6 +270,60 @@ class TaxReportController extends Controller
         return response()->json([
             'summary' => $summary,
             'entries' => $entries,
+        ]);
+    }
+
+    public function yearlySettlement($year = null)
+    {
+        $user = Auth::user();
+        $currentYear = $year ?? date('Y');
+        $availableYears = $user->incomeEntries()->selectRaw('DISTINCT year')->orderBy('year', 'desc')->pluck('year')->toArray();
+
+        // Lấy dữ liệu quyết toán cho tất cả các năm có dữ liệu
+        $multiYearStats = [];
+        foreach ($availableYears as $y) {
+            $multiYearStats[$y] = $this->taxService->calculateYearlyTaxSettlement($user, $y);
+        }
+
+        if ($year !== null && ($year < 1900 || $year > ($currentYear + 1))) {
+            return redirect()->route('tax.yearly_settlement', $currentYear)
+                             ->with('error', 'Năm không hợp lệ.');
+        }
+
+        $selectedYear = $year ?? $currentYear;
+
+        try {
+            // Tính toán quyết toán tổng hợp (giữ nguyên)
+            $yearlyTaxSettlement = $this->taxService->calculateYearlyTaxSettlement($user, $selectedYear);
+
+            // THÊM MỚI: Lấy dữ liệu chi tiết theo từng nguồn
+            $breakdownBySource = $this->taxService->getYearlyBreakdownBySource($user, $selectedYear);
+
+        } catch (\Exception $e) {
+            Log::error("Lỗi khi tính toán quyết toán thuế cho người dùng ID {$user->id} năm {$selectedYear}: " . $e->getMessage());
+            return redirect()->route('dashboard')->with('error', 'Có lỗi xảy ra khi lấy dữ liệu quyết toán thuế.');
+        }
+
+        $availableYears = $user->incomeEntries()
+                               ->selectRaw('DISTINCT year')
+                               ->orderBy('year', 'desc')
+                               ->pluck('year')
+                               ->toArray();
+        if (!in_array($currentYear, $availableYears)) {
+            array_unshift($availableYears, $currentYear);
+            sort($availableYears);
+        }
+        if (!in_array($selectedYear, $availableYears)) {
+            array_unshift($availableYears, $selectedYear);
+            sort($availableYears);
+        }
+
+        return view('tax-reports.yearly-settlement', [
+            'yearlyTaxSettlement' => $yearlyTaxSettlement,
+            'selectedYear' => $selectedYear,
+            'availableYears' => $availableYears,
+            'breakdownBySource' => $breakdownBySource, // Gửi dữ liệu mới sang view
+            'multiYearStats' => $multiYearStats,
         ]);
     }
 }

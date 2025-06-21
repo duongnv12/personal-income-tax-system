@@ -141,11 +141,11 @@
                     {{-- Final Tax Status --}}
                     <div class="mb-6 mt-10
                         @if ($yearlyTaxSettlement['tax_to_pay_or_refund'] > 0)
-                            bg-red-100 text-red-800 border-red-300
+                            tax-status tax-status-red
                         @elseif ($yearlyTaxSettlement['tax_to_pay_or_refund'] < 0)
-                            bg-green-100 text-green-800 border-green-300
+                            tax-status tax-status-green
                         @else
-                            bg-blue-100 text-blue-800 border-blue-300
+                            tax-status tax-status-blue
                         @endif
                         p-6 rounded-lg font-extrabold text-xl md:text-2xl text-center border-l-4 shadow-md transition-all duration-300 transform hover:scale-[1.01]">
                         @if ($yearlyTaxSettlement['tax_to_pay_or_refund'] > 0)
@@ -156,6 +156,139 @@
                             <i class="fa-solid fa-circle-info mr-3"></i> Bạn không có số thuế phải nộp thêm hoặc được hoàn lại trong năm <span class="font-bold">{{ $selectedYear }}</span>.
                         @endif
                     </div>
+
+                                        {{-- Biểu đồ so sánh các khoản giữa các năm --}}
+                    <div class="my-10 bg-white rounded-xl shadow p-6">
+                        <h3 class="text-lg font-bold mb-4 flex items-center">
+                            <i class="fa-solid fa-chart-line mr-2 text-blue-500"></i>
+                            So sánh các khoản giữa các năm
+                        </h3>
+                        <canvas id="yearlyComparisonChart" height="90"></canvas>
+                    </div>
+                    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            const stats = @json($multiYearStats);
+                            const years = Object.keys(stats);
+                            const gross = years.map(y => stats[y]['total_gross_income']);
+                            const taxPaid = years.map(y => stats[y]['total_tax_paid_provisional']);
+                            const taxRequired = years.map(y => stats[y]['total_tax_required_yearly']);
+
+                            const ctx = document.getElementById('yearlyComparisonChart').getContext('2d');
+
+                            // Tạo gradient cho từng đường
+                            const gradientBlue = ctx.createLinearGradient(0, 0, 0, 300);
+                            gradientBlue.addColorStop(0, 'rgba(59,130,246,0.4)');
+                            gradientBlue.addColorStop(1, 'rgba(59,130,246,0.05)');
+
+                            const gradientRed = ctx.createLinearGradient(0, 0, 0, 300);
+                            gradientRed.addColorStop(0, 'rgba(239,68,68,0.4)');
+                            gradientRed.addColorStop(1, 'rgba(239,68,68,0.05)');
+
+                            const gradientGreen = ctx.createLinearGradient(0, 0, 0, 300);
+                            gradientGreen.addColorStop(0, 'rgba(16,185,129,0.4)');
+                            gradientGreen.addColorStop(1, 'rgba(16,185,129,0.05)');
+
+                            new Chart(ctx, {
+                                type: 'line',
+                                data: {
+                                    labels: years,
+                                    datasets: [
+                                        {
+                                            label: 'Tổng thu nhập Gross',
+                                            data: gross,
+                                            borderColor: 'rgba(59,130,246,1)',
+                                            backgroundColor: gradientBlue,
+                                            pointBackgroundColor: 'rgba(59,130,246,1)',
+                                            pointBorderColor: '#fff',
+                                            pointRadius: 7,
+                                            pointHoverRadius: 10,
+                                            borderWidth: 3,
+                                            fill: true,
+                                            tension: 0.35,
+                                        },
+                                        {
+                                            label: 'Tổng thuế đã tạm nộp',
+                                            data: taxPaid,
+                                            borderColor: 'rgba(239,68,68,1)',
+                                            backgroundColor: gradientRed,
+                                            pointBackgroundColor: 'rgba(239,68,68,1)',
+                                            pointBorderColor: '#fff',
+                                            pointRadius: 7,
+                                            pointHoverRadius: 10,
+                                            borderWidth: 3,
+                                            fill: true,
+                                            tension: 0.35,
+                                        },
+                                        {
+                                            label: 'Tổng thuế phải nộp',
+                                            data: taxRequired,
+                                            borderColor: 'rgba(16,185,129,1)',
+                                            backgroundColor: gradientGreen,
+                                            pointBackgroundColor: 'rgba(16,185,129,1)',
+                                            pointBorderColor: '#fff',
+                                            pointRadius: 7,
+                                            pointHoverRadius: 10,
+                                            borderWidth: 3,
+                                            fill: true,
+                                            tension: 0.35,
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: {
+                                        legend: {
+                                            position: 'top',
+                                            labels: {
+                                                font: { size: 16 }
+                                            }
+                                        },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function(context) {
+                                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString('vi-VN') + ' VNĐ';
+                                                }
+                                            },
+                                            backgroundColor: '#fff',
+                                            titleColor: '#222',
+                                            bodyColor: '#222',
+                                            borderColor: '#e5e7eb',
+                                            borderWidth: 1,
+                                            padding: 12,
+                                            cornerRadius: 8,
+                                            displayColors: true,
+                                        },
+                                    },
+                                    scales: {
+                                        x: {
+                                            title: {
+                                                display: true,
+                                                text: 'Năm',
+                                                font: { size: 15, weight: 'bold' }
+                                            },
+                                            ticks: { font: { size: 14 } }
+                                        },
+                                        y: {
+                                            beginAtZero: true,
+                                            title: {
+                                                display: true,
+                                                text: 'Số tiền (VNĐ)',
+                                                font: { size: 15, weight: 'bold' }
+                                            },
+                                            ticks: {
+                                                font: { size: 14 },
+                                                callback: function(value) {
+                                                    return value.toLocaleString('vi-VN');
+                                                }
+                                            },
+                                            grid: { color: '#e5e7eb' }
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    </script>
                     
                     {{-- Company Specific PDF Export --}}
                     @php
@@ -180,6 +313,8 @@
                             </div>
                         </div>
                     @endif
+
+
                 </div>
 
                  <x-modal name="source-details-modal" maxWidth="4xl">
@@ -260,6 +395,37 @@
         </div>
     </div>
 </div>
+<style>
+    .tax-status {
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 800;
+        font-size: 1.25rem;
+        text-align: center;
+        border-left-width: 4px;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06);
+        transition: all 0.3s;
+        transform: scale(1);
+    }
+    .tax-status:hover {
+        transform: scale(1.01);
+    }
+    .tax-status-red {
+        background-color: #fee2e2;
+        color: #991b1b;
+        border-color: #fca5a5;
+    }
+    .tax-status-green {
+        background-color: #d1fae5;
+        color: #065f46;
+        border-color: #6ee7b7;
+    }
+    .tax-status-blue {
+        background-color: #dbeafe;
+        color: #1e40af;
+        border-color: #93c5fd;
+    }
+</style>
 <script>
     function sourceDetailsModal() {
         return {

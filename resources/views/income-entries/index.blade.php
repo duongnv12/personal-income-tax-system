@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="w-full mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg border border-gray-100">
                 <div class="p-6 text-gray-900">
                     <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b pb-4">
@@ -58,7 +58,7 @@
                                         <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Gross Income</th>
                                         <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">BHXH ước tính</th>
                                         <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Thuế TNCN tạm nộp</th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Net Income ước tính</th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Net Income</th>
                                         <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Thao tác</th>
                                     </tr>
                                 </thead>
