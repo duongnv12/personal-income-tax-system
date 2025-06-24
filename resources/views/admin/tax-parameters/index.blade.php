@@ -63,9 +63,9 @@
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ number_format($param->param_value, 0, ',', '.') }}</td>
                                             <td class="px-6 py-4 text-sm text-gray-700">{{ $param->description }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <a href="{{ route('admin.tax-parameters.edit', $param) }}" class="text-indigo-600 hover:text-indigo-900 inline-flex items-center"> {{-- Thay đổi từ text-blue-600 thành text-indigo-600, thêm inline-flex items-center --}}
+                                                <button type="button" class="text-indigo-600 hover:text-indigo-900 inline-flex items-center btn-edit-param" data-id="{{ $param->id }}">
                                                     <i class="fa-solid fa-edit mr-1"></i> Sửa
-                                                </a>
+                                                </button>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -77,4 +77,79 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal popup chỉnh sửa tham số thuế -->
+    <div id="editParamModal" class="fixed z-50 inset-0 overflow-y-auto hidden">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div class="absolute inset-0 bg-gray-500 opacity-50"></div>
+            </div>
+            <div class="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-lg w-full z-50">
+                <div class="p-6" id="editParamModalContent">
+                    <!-- Nội dung form sẽ được load ở đây -->
+                    <div class="text-center text-gray-500">Đang tải...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-success" class="fixed top-5 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50 hidden">
+        Cập nhật thành công!
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Xử lý click nút Sửa
+            document.querySelectorAll('.btn-edit-param').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const id = btn.getAttribute('data-id');
+                    const modal = document.getElementById('editParamModal');
+                    const modalContent = document.getElementById('editParamModalContent');
+                    modal.classList.remove('hidden');
+                    modalContent.innerHTML = '<div class="text-center text-gray-500">Đang tải...</div>';
+                    // Gọi AJAX lấy form
+                    fetch(`/admin/tax-parameters/${id}/edit?popup=1`)
+                        .then(res => res.text())
+                        .then(html => {
+                            modalContent.innerHTML = html;
+                            // Gắn sự kiện đóng modal
+                            const closeBtn = modalContent.querySelector('.btn-close-modal');
+                            if (closeBtn) closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+                            // Gắn submit ajax
+                            const form = modalContent.querySelector('form');
+                            if (form) {
+                                form.addEventListener('submit', function(e) {
+                                    e.preventDefault();
+                                    const formData = new FormData(form);
+                                    fetch(form.action, {
+                                        method: 'POST',
+                                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                                        body: formData
+                                    })
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        if (data.success) {
+                                            // Hiển thị toast
+                                            const toast = document.getElementById('toast-success');
+                                            toast.classList.remove('hidden');
+                                            setTimeout(() => {
+                                                toast.classList.add('hidden');
+                                                window.location.reload();
+                                            }, 1500);
+                                        } else {
+                                            // Hiển thị lỗi
+                                            if (data.html) modalContent.innerHTML = data.html;
+                                        }
+                                    });
+                                });
+                            }
+                        });
+                });
+            });
+            // Đóng modal khi click ra ngoài
+            document.getElementById('editParamModal').addEventListener('click', function(e) {
+                if (e.target === this) this.classList.add('hidden');
+            });
+        });
+    </script>
 </x-app-layout>

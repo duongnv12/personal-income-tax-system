@@ -21,8 +21,11 @@ class TaxParameterController extends Controller
     /**
      * Show the form for editing the specified tax parameter.
      */
-    public function edit(TaxParameter $taxParameter)
+    public function edit(TaxParameter $taxParameter, Request $request)
     {
+        if ($request->has('popup')) {
+            return view('admin.tax-parameters._edit-form', compact('taxParameter'));
+        }
         return view('admin.tax-parameters.edit', compact('taxParameter'));
     }
 
@@ -37,6 +40,11 @@ class TaxParameterController extends Controller
         ]);
 
         $taxParameter->update($validatedData);
+
+      
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()->route('admin.tax-parameters.index')->with('success', 'Tham số thuế đã được cập nhật thành công.');
     }

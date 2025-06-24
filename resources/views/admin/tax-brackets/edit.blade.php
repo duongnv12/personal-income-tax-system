@@ -86,47 +86,48 @@
         </div>
     </div>
 
-    {{-- Script for tax_rate conversion --}}
+    {{-- Script for tax_rate conversion & format number for income fields --}}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const form = document.querySelector('form[action*="tax-brackets.update"]');
+            const form = document.querySelector('form[action*="tax-brackets"]');
             if (form) {
+                const incomeFrom = form.querySelector('#income_from');
+                const incomeTo = form.querySelector('#income_to');
+
+                if (incomeFrom) incomeFrom.value = formatNumber(incomeFrom.value.replace(/[^\d]/g, ''));
+                if (incomeTo) incomeTo.value = formatNumber(incomeTo.value.replace(/[^\d]/g, ''));
+
+                [incomeFrom, incomeTo].forEach(function(input) {
+                    if (input) {
+                        input.addEventListener('input', function (e) {
+                            let raw = input.value.replace(/[^\d]/g, '');
+                            if (raw) {
+                                input.value = formatNumber(raw);
+                            } else {
+                                input.value = '';
+                            }
+                        });
+                        input.addEventListener('paste', function (e) {
+                            e.preventDefault();
+                            let paste = (e.clipboardData || window.clipboardData).getData('text');
+                            paste = paste.replace(/[^\d]/g, '');
+                            input.value = formatNumber(paste);
+                        });
+                    }
+                });
+
                 form.addEventListener('submit', function () {
                     const taxRateInput = form.querySelector('#tax_rate');
                     if (taxRateInput && taxRateInput.value !== '') {
                         taxRateInput.value = parseFloat(taxRateInput.value.replace(/,/g, '').replace(/%/g, '')) / 100;
                     }
-                    // Remove formatting from income_from and income_to before submit
-                    const incomeFrom = form.querySelector('#income_from');
                     if (incomeFrom) incomeFrom.value = incomeFrom.value.replace(/[^\d]/g, '');
-                    const incomeTo = form.querySelector('#income_to');
                     if (incomeTo) incomeTo.value = incomeTo.value.replace(/[^\d]/g, '');
                 });
-
-                // Format number with commas while typing (real-time)
-                function formatNumberInput(input) {
-                    let lastValue = input.value;
-                    input.addEventListener('input', function (e) {
-                        let cursor = input.selectionStart;
-                        let raw = input.value.replace(/[^\d]/g, '');
-                        if (raw) {
-                            let formatted = Number(raw).toLocaleString('en-US');
-                            // Nếu giá trị mới khác giá trị cũ thì cập nhật lại input
-                            if (formatted !== input.value) {
-                                input.value = formatted;
-                                // Đặt lại vị trí con trỏ cuối chuỗi
-                                input.setSelectionRange(input.value.length, input.value.length);
-                            }
-                        } else {
-                            input.value = '';
-                        }
-                        lastValue = input.value;
-                    });
-                }
-                const incomeFrom = form.querySelector('#income_from');
-                const incomeTo = form.querySelector('#income_to');
-                if (incomeFrom) formatNumberInput(incomeFrom);
-                if (incomeTo) formatNumberInput(incomeTo);
+            }
+            function formatNumber(value) {
+                if (!value) return '';
+                return value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             }
         });
     </script>
