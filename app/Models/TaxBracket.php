@@ -11,15 +11,15 @@ class TaxBracket extends Model
 
     protected $fillable = [
         'level',
-        'min_income',
-        'max_income',
+        'income_from',
+        'income_to',
         'tax_rate',
         'effective_date',
     ];
 
     protected $casts = [
-        'min_income' => 'integer',
-        'max_income' => 'integer',
+        'income_from' => 'integer',
+        'income_to' => 'integer',
         'tax_rate' => 'float', // Cast tax_rate sang float
         'effective_date' => 'date',
     ];

@@ -31,15 +31,20 @@ class TaxBracketController extends Controller
      */
     public function store(Request $request)
     {
+        \Log::info('TaxBracket store request:', $request->all());
         $validatedData = $request->validate([
             'level' => 'required|integer|min:1|unique:tax_brackets,level',
             'income_from' => 'required|numeric|min:0',
             'income_to' => 'nullable|numeric|gt:income_from', // income_to có thể null (bậc cuối), nhưng nếu có thì phải lớn hơn income_from
-            'tax_rate' => 'required|numeric|min:0|max:1', // Tỷ lệ từ 0 đến 1 (ví dụ 0.05 cho 5%)
+            'tax_rate' => 'required|numeric|min:0|max:100', // Cho phép nhập phần trăm 0-100
         ], [
             'level.unique' => 'Cấp độ này đã tồn tại.',
             'income_to.gt' => 'Thu nhập đến phải lớn hơn thu nhập từ.',
+            'tax_rate.max' => 'Thuế suất tối đa là 100%.',
         ]);
+
+        // Đảm bảo tax_rate luôn là số thập phân nhỏ hơn 1
+        $validatedData['tax_rate'] = $validatedData['tax_rate'] > 1 ? $validatedData['tax_rate'] / 100 : $validatedData['tax_rate'];
 
         TaxBracket::create($validatedData);
 
@@ -63,11 +68,15 @@ class TaxBracketController extends Controller
             'level' => ['required', 'integer', 'min:1', Rule::unique('tax_brackets')->ignore($taxBracket->id)],
             'income_from' => 'required|numeric|min:0',
             'income_to' => 'nullable|numeric|gt:income_from',
-            'tax_rate' => 'required|numeric|min:0|max:1',
+            'tax_rate' => 'required|numeric|min:0|max:100', // Cho phép nhập phần trăm 0-100
         ], [
             'level.unique' => 'Cấp độ này đã tồn tại.',
             'income_to.gt' => 'Thu nhập đến phải lớn hơn thu nhập từ.',
+            'tax_rate.max' => 'Thuế suất tối đa là 100%.',
         ]);
+
+        // Đảm bảo tax_rate luôn là số thập phân nhỏ hơn 1
+        $validatedData['tax_rate'] = $validatedData['tax_rate'] > 1 ? $validatedData['tax_rate'] / 100 : $validatedData['tax_rate'];
 
         $taxBracket->update($validatedData);
 
