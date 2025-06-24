@@ -65,11 +65,33 @@ class TaxReportController extends Controller
             sort($availableYears);
         }
 
+        // Lấy tổng thu nhập, tổng thuế đã tạm nộp, tổng thuế phải nộp từng năm để vẽ biểu đồ
+        $incomeEntriesByYear = $user->incomeEntries()
+            ->selectRaw('year, SUM(gross_income) as total_income, SUM(tax_paid) as total_tax_paid')
+            ->groupBy('year')
+            ->orderBy('year')
+            ->get();
+        $incomeByYear = [];
+        $taxPaidByYear = [];
+        $taxRequiredByYear = [];
+        foreach ($incomeEntriesByYear as $row) {
+            $incomeByYear[$row->year] = (float) $row->total_income;
+            $taxPaidByYear[$row->year] = (float) $row->total_tax_paid;
+        }
+        // Lấy tổng thuế phải nộp từng năm từ service (nếu có)
+        foreach (array_keys($incomeByYear) as $year) {
+            $settlement = $this->taxService->calculateYearlyTaxSettlement($user, $year);
+            $taxRequiredByYear[$year] = isset($settlement['total_tax_required_yearly']) ? (float) $settlement['total_tax_required_yearly'] : 0;
+        }
+
         return view('tax-reports.yearly-settlement', [
             'yearlyTaxSettlement' => $yearlyTaxSettlement,
             'selectedYear' => $selectedYear,
             'availableYears' => $availableYears,
             'breakdownBySource' => $breakdownBySource, // Gửi dữ liệu mới sang view
+            'incomeByYear' => $incomeByYear,
+            'taxPaidByYear' => $taxPaidByYear,
+            'taxRequiredByYear' => $taxRequiredByYear,
         ]);
     }
 

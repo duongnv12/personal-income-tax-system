@@ -182,7 +182,15 @@
                     @endif
                 </div>
 
-                 <x-modal name="source-details-modal" maxWidth="4xl">
+                {{-- Biểu đồ so sánh thu nhập các năm (di chuyển xuống dưới) --}}
+                <div class="mb-10">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fa-solid fa-chart-column mr-2 text-green-600"></i> So sánh tổng thu nhập các năm
+                    </h3>
+                    <canvas id="incomeByYearChart" height="80"></canvas>
+                </div>
+
+                <x-modal name="source-details-modal" maxWidth="4xl">
                     <div class="p-6">
                         <div class="flex justify-between items-start mb-4">
                             <h2 class="text-xl font-bold text-gray-900" x-text="`Chi tiết: ${details?.summary?.source_name || '...'}`"></h2>
@@ -260,6 +268,7 @@
         </div>
     </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     function sourceDetailsModal() {
         return {
@@ -283,5 +292,76 @@
             }
         }
     }
+
+    // Dữ liệu từ backend
+    const incomeByYear = @json($incomeByYear);
+    const taxPaidByYear = @json($taxPaidByYear);
+    const taxRequiredByYear = @json($taxRequiredByYear);
+    const years = Object.keys(incomeByYear);
+    const ctx = document.getElementById('incomeByYearChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: years,
+            datasets: [
+                {
+                    label: 'Tổng thu nhập Gross',
+                    data: years.map(y => incomeByYear[y] || 0),
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                    pointRadius: 5,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Tổng thuế đã tạm nộp',
+                    data: years.map(y => taxPaidByYear[y] || 0),
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+                    pointRadius: 5,
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.3
+                },
+                {
+                    label: 'Tổng thuế phải nộp',
+                    data: years.map(y => taxRequiredByYear[y] || 0),
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                    pointRadius: 5,
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: true },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + Number(context.parsed.y).toLocaleString('vi-VN') + ' VNĐ';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString('vi-VN') + ' VNĐ';
+                        }
+                    }
+                }
+            }
+        }
+    });
 </script>
 </x-app-layout>
