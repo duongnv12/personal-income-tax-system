@@ -101,10 +101,12 @@
                                 <div id="gross_income_field">
                                     <x-input-label for="gross_income" :value="__('Lương Gross (VNĐ)')" />
                                     <x-text-input id="gross_income" class="block mt-1 w-full" type="text" inputmode="numeric" name="gross_income" :value="old('gross_income', request('gross_income')) ?? (isset($oldInput['gross_income']) ? number_format($oldInput['gross_income']) : '')" min="0" placeholder="Nhập lương Gross" />
+                                    <p class="text-sm text-gray-500 mt-1" id="gross_income_hint">Nhập lương Gross cho 1 tháng</p>
                                 </div>
                                 <div id="net_income_field" style="display: none;">
                                     <x-input-label for="net_income" :value="__('Lương Net (VNĐ)')" />
                                     <x-text-input id="net_income" class="block mt-1 w-full" type="text" inputmode="numeric" name="net_income" :value="old('net_income', request('net_income')) ?? (isset($oldInput['net_income']) ? number_format($oldInput['net_income']) : '')" min="0" placeholder="Nhập lương Net" />
+                                    <p class="text-sm text-gray-500 mt-1" id="net_income_hint">Nhập lương Net cho 1 tháng</p>
                                 </div>
 
                                 {{-- Mức lương đóng bảo hiểm --}}
@@ -173,7 +175,14 @@
             </div>
 
             <div class="mt-6">
-                <h3 class="font-semibold text-lg mb-2 text-gray-800">Bảng tóm tắt</h3>
+                <h3 class="font-semibold text-lg mb-2 text-gray-800">
+                    Bảng tóm tắt
+                    @if(isset($result['entry_type']) && $result['entry_type'] === 'yearly')
+                        <span class="text-sm text-blue-600 font-normal">(Tính cho cả năm)</span>
+                    @else
+                        <span class="text-sm text-green-600 font-normal">(Tính cho 1 tháng)</span>
+                    @endif
+                </h3>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center p-4 bg-gray-50 rounded-lg border">
                     <div>
                         <p class="text-sm text-gray-600">Lương Gross</p>
@@ -193,7 +202,14 @@
                     </div>
                 </div>
 
-                <h4 class="font-semibold text-gray-800 mt-6 mb-2">Diễn giải chi tiết (VND)</h4>
+                <h4 class="font-semibold text-gray-800 mt-6 mb-2">
+                    Diễn giải chi tiết (VND)
+                    @if(isset($result['entry_type']) && $result['entry_type'] === 'yearly')
+                        <span class="text-sm text-blue-600 font-normal"> - Cả năm</span>
+                    @else
+                        <span class="text-sm text-green-600 font-normal"> - 1 tháng</span>
+                    @endif
+                </h4>
                 <div class="border rounded-lg overflow-hidden">
                     <table class="min-w-full">
                         <tbody class="divide-y divide-gray-200">
@@ -287,11 +303,18 @@
             function toggleEntryType() {
                 var entryType = document.querySelector('input[name="entry_type"]:checked').value;
                 var monthField = document.getElementById('month_field');
+                var grossHint = document.getElementById('gross_income_hint');
+                var netHint = document.getElementById('net_income_hint');
+                
                 if (entryType === 'yearly') {
                     monthField.style.display = 'none';
                     document.getElementById('month').value = '';
+                    if (grossHint) grossHint.textContent = 'Nhập tổng lương Gross cho cả năm';
+                    if (netHint) netHint.textContent = 'Nhập tổng lương Net cho cả năm';
                 } else {
                     monthField.style.display = 'block';
+                    if (grossHint) grossHint.textContent = 'Nhập lương Gross cho 1 tháng';
+                    if (netHint) netHint.textContent = 'Nhập lương Net cho 1 tháng';
                 }
             }
 

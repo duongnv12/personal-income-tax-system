@@ -171,14 +171,14 @@ class TaxCalculationService
                             ->where(function ($query) use ($incomeEntry) {
                                 // Logic này hơi phức tạp nếu incomeEntry chỉ có tháng và năm
                                 // Giả sử registration_month và end_month là số tháng trong năm
-                                $query->where(function($q) use ($incomeEntry) {
+                                $query->where(function ($q) use ($incomeEntry) {
                                     $q->whereMonth('registration_date', '<=', $incomeEntry->month)
-                                      ->whereYear('registration_date', '<=', $incomeEntry->year);
+                                        ->whereYear('registration_date', '<=', $incomeEntry->year);
                                 })->orWhereNull('registration_date'); // Coi như đăng ký trước đó
-
-                                $query->where(function($q) use ($incomeEntry) {
+    
+                                $query->where(function ($q) use ($incomeEntry) {
                                     $q->whereMonth('deactivation_date', '>=', $incomeEntry->month)
-                                      ->whereYear('deactivation_date', '>=', $incomeEntry->year);
+                                        ->whereYear('deactivation_date', '>=', $incomeEntry->year);
                                 })->orWhereNull('deactivation_date'); // Coi như chưa ngừng hiệu lực
                             })
                             ->count();
@@ -188,11 +188,13 @@ class TaxCalculationService
 
                 // Tổng thu nhập chịu thuế
                 $assessableIncome = $grossIncome - $bhxhDeduction - $otherDeductions;
-                if ($assessableIncome < 0) $assessableIncome = 0;
+                if ($assessableIncome < 0)
+                    $assessableIncome = 0;
 
                 // Thu nhập tính thuế (sau giảm trừ)
                 $taxableIncome = $assessableIncome - $personalDeduction - $dependentDeductionMonthly;
-                if ($taxableIncome < 0) $taxableIncome = 0;
+                if ($taxableIncome < 0)
+                    $taxableIncome = 0;
 
                 // Tính thuế TNCN theo lũy tiến
                 $taxPaid = $this->calculateProgressiveTaxSalary($taxableIncome);
@@ -265,8 +267,8 @@ class TaxCalculationService
 
         // Lấy tất cả các khoản thu nhập của người dùng trong năm
         $incomeEntries = $user->incomeEntries()
-                              ->where('year', $year)
-                              ->get();
+            ->where('year', $year)
+            ->get();
 
         foreach ($incomeEntries as $entry) {
             switch ($entry->income_type) {
@@ -309,8 +311,8 @@ class TaxCalculationService
 
                 // Người phụ thuộc phải có trạng thái 'active' trong khoảng thời gian có hiệu lực
                 // và ngày đăng ký phải trước hoặc trong tháng tính, ngày ngừng hiệu lực phải sau hoặc trong tháng tính
-                $isRegisteredBeforeEndOfMonth = $dependent->registration_date && $dependent->registration_date->lte($endOfMonth);
-                $isDeactivatedAfterStartOfMonth = ($dependent->deactivation_date === null) || ($dependent->deactivation_date && $dependent->deactivation_date->gte($startOfMonth));
+                $isRegisteredBeforeEndOfMonth = $dependent->registration_date && $dependent->registration_date <= $endOfMonth;
+                $isDeactivatedAfterStartOfMonth = ($dependent->deactivation_date === null) || ($dependent->deactivation_date && $dependent->deactivation_date >= $startOfMonth);
 
                 if ($dependent->status === 'active' && $isRegisteredBeforeEndOfMonth && $isDeactivatedAfterStartOfMonth) {
                     $monthsEligible++;
@@ -323,11 +325,13 @@ class TaxCalculationService
 
         // Tổng thu nhập chịu thuế từ tiền lương (sau khi trừ BHXH, các khoản giảm khác từ lương)
         $assessableIncomeSalary = $totalSalaryGrossIncome - $totalSalaryBhxhDeduction - $totalSalaryOtherDeductions;
-        if ($assessableIncomeSalary < 0) $assessableIncomeSalary = 0;
+        if ($assessableIncomeSalary < 0)
+            $assessableIncomeSalary = 0;
 
         // Tổng thu nhập tính thuế từ tiền lương (sau khi trừ giảm trừ gia cảnh)
         $totalTaxableIncomeSalary = $assessableIncomeSalary - $totalPersonalDeductionsCombined;
-        if ($totalTaxableIncomeSalary < 0) $totalTaxableIncomeSalary = 0;
+        if ($totalTaxableIncomeSalary < 0)
+            $totalTaxableIncomeSalary = 0;
 
         // Tổng thuế phải nộp từ tiền lương theo lũy tiến
         $totalTaxRequiredSalary = $this->calculateProgressiveTaxSalary($totalTaxableIncomeSalary);
@@ -338,7 +342,8 @@ class TaxCalculationService
         // Thu nhập kinh doanh tính theo tỷ lệ trên doanh thu
         // (Lưu ý: Nếu có 'other_deductions' cho kinh doanh, bạn có thể trừ chúng ở đây trước khi tính thuế)
         $businessRevenueForTax = $totalBusinessGrossIncome - $totalBusinessOtherDeductions; // Giả sử other_deductions là chi phí hợp lệ
-        if ($businessRevenueForTax < 0) $businessRevenueForTax = 0;
+        if ($businessRevenueForTax < 0)
+            $businessRevenueForTax = 0;
         $totalTaxRequiredBusiness = $this->calculateTaxBusiness($businessRevenueForTax);
         // --- Kết thúc tính toán cho thu nhập từ kinh doanh ---
 
@@ -453,14 +458,19 @@ class TaxCalculationService
     {
         // data từ form
         $direction = $data['calculation_direction'] ?? 'gross_to_net';
-        $region = (int)($data['region'] ?? 1);
+        $region = (int) ($data['region'] ?? 1);
         $insuranceType = $data['insurance_salary_type'] ?? 'official';
-        $insuranceCustom = isset($data['insurance_salary_custom']) ? (float)$data['insurance_salary_custom'] : null;
-        $dependents = (int)($data['dependents'] ?? 0);
-        $grossIncome = isset($data['gross_income']) ? (float)$data['gross_income'] : 0;
-        $netIncome = isset($data['net_income']) ? (float)$data['net_income'] : 0;
-        $otherDeductions = isset($data['other_deductions']) ? (float)$data['other_deductions'] : 0;
+        $insuranceCustom = isset($data['insurance_salary_custom']) ? (float) $data['insurance_salary_custom'] : null;
+        $dependents = (int) ($data['dependents'] ?? 0);
+        $grossIncome = isset($data['gross_income']) ? (float) $data['gross_income'] : 0;
+        $netIncome = isset($data['net_income']) ? (float) $data['net_income'] : 0;
+        $otherDeductions = isset($data['other_deductions']) ? (float) $data['other_deductions'] : 0;
         $incomeType = $data['income_type'] ?? 'salary';
+        $entryType = $data['entry_type'] ?? 'monthly';
+
+        // Nếu là tính cho cả năm, thì giảm trừ bản thân và người phụ thuộc cũng phải tính cho cả năm
+        $personalDeductionMultiplier = ($entryType === 'yearly') ? 12 : 1;
+        $dependentDeductionMultiplier = ($entryType === 'yearly') ? 12 : 1;
 
         if ($direction === 'net_to_gross') {
             // Lặp để tìm gross_income phù hợp
@@ -472,8 +482,8 @@ class TaxCalculationService
                 4 => 3300000,
             ];
             $minSalary = $minSalaryByRegion[$region] ?? 4700000;
-            $personalDeduction = $this->taxParameters[self::PERSONAL_DEDUCTION_KEY] ?? 11000000;
-            $dependentDeduction = $this->taxParameters[self::DEPENDENT_DEDUCTION_KEY] ?? 4400000;
+            $personalDeduction = ($this->taxParameters[self::PERSONAL_DEDUCTION_KEY] ?? 11000000) * $personalDeductionMultiplier;
+            $dependentDeduction = ($this->taxParameters[self::DEPENDENT_DEDUCTION_KEY] ?? 4400000) * $dependentDeductionMultiplier;
             $totalDependentDeduction = $dependents * $dependentDeduction;
             $bhxhCap = $this->taxParameters[self::MAX_SOCIAL_INSURANCE_KEY] ?? 29800000;
             $maxIter = 100;
@@ -496,7 +506,8 @@ class TaxCalculationService
                 $bhtn = $insuranceSalary * 0.01;
                 $totalInsurance = $bhxh + $bhyt + $bhtn;
                 $assessableIncome = $guessGross - $totalInsurance - $personalDeduction - $totalDependentDeduction - $otherDeductions;
-                if ($assessableIncome < 0) $assessableIncome = 0;
+                if ($assessableIncome < 0)
+                    $assessableIncome = 0;
                 $taxPaid = 0;
                 $taxBracketsDetail = [];
                 if ($incomeType === 'salary') {
@@ -539,7 +550,8 @@ class TaxCalculationService
                 }
                 // Điều chỉnh guessGross
                 $guessGross += ($targetNet - $net) * 1.05;
-                if ($guessGross < 0) $guessGross = $targetNet; // tránh âm
+                if ($guessGross < 0)
+                    $guessGross = $targetNet; // tránh âm
             }
             if (!$found) {
                 return [
@@ -583,7 +595,7 @@ class TaxCalculationService
             ];
         }
 
-    
+
         $minSalaryByRegion = [
             1 => 4700000, // Vùng I
             2 => 4200000, // Vùng II
@@ -613,13 +625,14 @@ class TaxCalculationService
         $totalInsurance = $bhxh + $bhyt + $bhtn;
 
         // 4. Giảm trừ bản thân và người phụ thuộc
-        $personalDeduction = $this->taxParameters[self::PERSONAL_DEDUCTION_KEY] ?? 11000000;
-        $dependentDeduction = $this->taxParameters[self::DEPENDENT_DEDUCTION_KEY] ?? 4400000;
+        $personalDeduction = ($this->taxParameters[self::PERSONAL_DEDUCTION_KEY] ?? 11000000) * $personalDeductionMultiplier;
+        $dependentDeduction = ($this->taxParameters[self::DEPENDENT_DEDUCTION_KEY] ?? 4400000) * $dependentDeductionMultiplier;
         $totalDependentDeduction = $dependents * $dependentDeduction;
 
         // 5. Thu nhập chịu thuế
         $assessableIncome = $grossIncome - $totalInsurance - $personalDeduction - $totalDependentDeduction - $otherDeductions;
-        if ($assessableIncome < 0) $assessableIncome = 0;
+        if ($assessableIncome < 0)
+            $assessableIncome = 0;
 
         // 6. Tính thuế TNCN lũy tiến
         $taxPaid = 0;
@@ -660,7 +673,8 @@ class TaxCalculationService
 
         // 7. Tính lương thực nhận (Net)
         $net = $grossIncome - $totalInsurance - $taxPaid - $otherDeductions;
-        if ($net < 0) $net = 0;
+        if ($net < 0)
+            $net = 0;
 
         // 8. Chi phí người sử dụng lao động
         $bhxh_employer = $insuranceSalary * 0.17;
@@ -691,10 +705,11 @@ class TaxCalculationService
             'bhtn_employer' => round($bhtn_employer, 0),
             'bhtnld' => round($bhtnld, 0),
             'tong_chi_phi' => round($tong_chi_phi, 0),
+            'entry_type' => $entryType,
             'error' => null
         ];
     }
-    
+
     /**
      * Provides a yearly breakdown of income and deductions per income source.
      *
@@ -706,9 +721,9 @@ class TaxCalculationService
     {
         // Lấy tất cả các khoản thu nhập trong năm và thông tin nguồn liên quan
         $incomeEntries = $user->incomeEntries()
-                              ->where('year', $year)
-                              ->with('incomeSource')
-                              ->get();
+            ->where('year', $year)
+            ->with('incomeSource')
+            ->get();
 
         // Nhóm các khoản thu nhập theo ID của nguồn và tổng hợp dữ liệu
         $breakdown = $incomeEntries->groupBy('income_source_id')->map(function ($entries, $sourceId) {

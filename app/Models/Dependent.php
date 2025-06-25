@@ -23,8 +23,8 @@ class Dependent extends Model
 
     protected $casts = [
         'dob' => 'date',
-        'registration_date' => 'date', // Cast as date
-        'deactivation_date' => 'date', // Cast as date
+        'registration_date' => 'datetime', // Cast as datetime để có method Carbon
+        'deactivation_date' => 'datetime', // Cast as datetime để có method Carbon
     ];
 
     public function user()

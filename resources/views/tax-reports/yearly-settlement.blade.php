@@ -21,7 +21,7 @@
                             <select id="report_year"
                                 onchange="window.location.href = this.value"
                                 class="border border-blue-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm text-base py-1 px-3 bg-white font-semibold text-blue-700 transition mr-2"
-                                style="background-image: none; min-width: 100px;">
+                                style="background-image: none; min-width: auto;">
                                 @foreach ($availableYears as $year)
                                     <option value="{{ route('tax.yearly_settlement', $year) }}"
                                         {{ $year == $selectedYear ? 'selected' : '' }}>
