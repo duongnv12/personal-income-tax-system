@@ -7,8 +7,7 @@ use App\Models\IncomeEntry;
 use App\Models\TaxParameter;
 use App\Models\TaxBracket;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log; // Import Log facade
-
+use Illuminate\Support\Facades\Log; 
 class TaxCalculationService
 {
     protected $taxParameters;
@@ -133,7 +132,7 @@ class TaxCalculationService
     public function calculateMonthlyTax(IncomeEntry $incomeEntry): array
     {
         $grossIncome = $incomeEntry->gross_income;
-        $entryType = $incomeEntry->entry_type ?? 'monthly'; // Thêm dòng này
+        $entryType = $incomeEntry->entry_type ?? 'monthly'; 
 
         // Nếu là yearly nhưng chỉ nhập lương tháng, tự động nhân 12
         if ($entryType === 'yearly' && $incomeEntry->income_type === 'salary' && $incomeEntry->month) {

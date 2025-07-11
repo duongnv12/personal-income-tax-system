@@ -273,6 +273,12 @@ class TaxReportController extends Controller
         ]);
     }
 
+    /**
+     * Hiển thị báo cáo quyết toán thuế hàng năm với khả năng chọn năm.
+     *
+     * @param int|null $year
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     */
     public function yearlySettlement($year = null)
     {
         $user = Auth::user();

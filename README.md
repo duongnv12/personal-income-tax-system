@@ -72,7 +72,7 @@ Truy cập hệ thống tại: [http://localhost:8000](http://localhost:8000)
 
 ## 👤 Tài khoản mẫu
 
-| Loại tài khoản | Email                | Mật khẩu   |
+| Loại tài khoản | Email               | Mật khẩu   |
 |---------------|----------------------|------------|
 | Admin         | admin@example.com    | password   |
 | User thường   | user@example.com     | password   |

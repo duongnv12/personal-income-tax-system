@@ -12,7 +12,7 @@ class IncomeSource extends Model
     protected $fillable = [
         'user_id',
         'name',
-        'income_type', // Thêm vào đây
+        'income_type',
         'tax_code',
         'address',
     ];

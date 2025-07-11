@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     <h3 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-3 flex items-center">
@@ -67,31 +67,31 @@
 
                         <div class="mb-4">
                             <x-input-label for="gross_income" :value="__('Tổng thu nhập Gross (VNĐ)')" />
-                            <x-text-input id="gross_income" class="block mt-1 w-full" type="number" step="1" name="gross_income" :value="old('gross_income', $incomeEntry->gross_income)" required min="0" placeholder="Tổng tiền trước thuế và các khoản khấu trừ" />
+                            <x-text-input id="gross_income" class="block mt-1 w-full" type="text" inputmode="numeric" name="gross_income" :value="old('gross_income') ?? (isset($incomeEntry->gross_income) ? number_format($incomeEntry->gross_income) : '')" required min="0" placeholder="Tổng tiền trước thuế và các khoản khấu trừ" />
                             <x-input-error :messages="$errors->get('gross_income')" class="mt-2" />
                         </div>
 
                         <div class="mb-4">
                             <x-input-label for="net_income" :value="__('Thu nhập Net (thực nhận, tùy chọn)')" />
-                            <x-text-input id="net_income" class="block mt-1 w-full" type="number" step="1" name="net_income" :value="old('net_income', $incomeEntry->net_income)" min="0" placeholder="Số tiền thực nhận sau các khoản khấu trừ" />
+                            <x-text-input id="net_income" class="block mt-1 w-full" type="text" inputmode="numeric" name="net_income" :value="old('net_income') ?? (isset($incomeEntry->net_income) ? number_format($incomeEntry->net_income) : '')" min="0" placeholder="Số tiền thực nhận sau các khoản khấu trừ" />
                             <x-input-error :messages="$errors->get('net_income')" class="mt-2" />
                         </div>
 
                         <div class="mb-4">
                             <x-input-label for="tax_paid" :value="__('Thuế TNCN đã nộp (tạm tính, tùy chọn)')" />
-                            <x-text-input id="tax_paid" class="block mt-1 w-full" type="number" step="1" name="tax_paid" :value="old('tax_paid', $incomeEntry->tax_paid)" min="0" placeholder="Số tiền thuế TNCN đã nộp tạm tính" />
+                            <x-text-input id="tax_paid" class="block mt-1 w-full" type="text" inputmode="numeric" name="tax_paid" :value="old('tax_paid') ?? (isset($incomeEntry->tax_paid) ? number_format($incomeEntry->tax_paid) : '')" min="0" placeholder="Số tiền thuế TNCN đã nộp tạm tính" />
                             <x-input-error :messages="$errors->get('tax_paid')" class="mt-2" />
                         </div>
 
                         <div class="mb-4">
                             <x-input-label for="bhxh_deduction" :value="__('Khoản khấu trừ BHXH (tùy chọn)')" />
-                            <x-text-input id="bhxh_deduction" class="block mt-1 w-full" type="number" step="1" name="bhxh_deduction" :value="old('bhxh_deduction', $incomeEntry->bhxh_deduction)" min="0" placeholder="Khoản khấu trừ đóng BHXH, BHYT, BHTN" />
+                            <x-text-input id="bhxh_deduction" class="block mt-1 w-full" type="text" inputmode="numeric" name="bhxh_deduction" :value="old('bhxh_deduction') ?? (isset($incomeEntry->bhxh_deduction) ? number_format($incomeEntry->bhxh_deduction) : '')" min="0" placeholder="Khoản khấu trừ đóng BHXH, BHYT, BHTN" />
                             <x-input-error :messages="$errors->get('bhxh_deduction')" class="mt-2" />
                         </div>
 
                         <div class="mb-6">
                             <x-input-label for="other_deductions" :value="__('Các khoản giảm trừ khác (tùy chọn)')" />
-                            <x-text-input id="other_deductions" class="block mt-1 w-full" type="number" step="1" name="other_deductions" :value="old('other_deductions', $incomeEntry->other_deductions)" min="0" placeholder="Các khoản giảm trừ khác chưa được đề cập" />
+                            <x-text-input id="other_deductions" class="block mt-1 w-full" type="text" inputmode="numeric" name="other_deductions" :value="old('other_deductions') ?? (isset($incomeEntry->other_deductions) ? number_format($incomeEntry->other_deductions) : '')" min="0" placeholder="Các khoản giảm trừ khác chưa được đề cập" />
                             <x-input-error :messages="$errors->get('other_deductions')" class="mt-2" />
                         </div>
 
@@ -106,6 +106,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
     <script>
         function toggleMonthField() {
             var entryType = document.getElementById('entry_type').value;
@@ -123,6 +124,48 @@
         }
 
         // Call the function on page load to handle old('entry_type')
-        document.addEventListener('DOMContentLoaded', toggleMonthField);
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleMonthField();
+            
+            // Initialize Cleave.js for number formatting
+            new Cleave('#gross_income', {
+                numeral: true,
+                numeralThousandsGroupStyle: 'thousand'
+            });
+
+            new Cleave('#net_income', {
+                numeral: true,
+                numeralThousandsGroupStyle: 'thousand'
+            });
+            
+            new Cleave('#tax_paid', {
+                numeral: true,
+                numeralThousandsGroupStyle: 'thousand'
+            });
+            
+            new Cleave('#bhxh_deduction', {
+                numeral: true,
+                numeralThousandsGroupStyle: 'thousand'
+            });
+            
+            new Cleave('#other_deductions', {
+                numeral: true,
+                numeralThousandsGroupStyle: 'thousand'
+            });
+
+            // Handle form submission - unformat values
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function() {
+                    ['gross_income', 'net_income', 'tax_paid', 'bhxh_deduction', 'other_deductions'].forEach(function(id) {
+                        const el = document.getElementById(id);
+                        if (el && el.value) {
+                           // Unformat the value before submitting
+                           el.value = el.value.replace(/,/g, '');
+                        }
+                    });
+                });
+            }
+        });
     </script>
 </x-app-layout>

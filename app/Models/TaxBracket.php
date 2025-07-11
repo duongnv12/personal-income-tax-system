@@ -20,7 +20,7 @@ class TaxBracket extends Model
     protected $casts = [
         'income_from' => 'integer',
         'income_to' => 'integer',
-        'tax_rate' => 'float', // Cast tax_rate sang float
+        'tax_rate' => 'float', 
         'effective_date' => 'date',
     ];
 }

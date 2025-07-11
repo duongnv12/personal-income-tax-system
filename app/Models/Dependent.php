@@ -16,15 +16,15 @@ class Dependent extends Model
         'identification_number',
         'relationship',
         'gender',
-        'registration_date', // Thêm vào đây
-        'deactivation_date', // Thêm vào đây
-        'status', // Giữ nguyên
+        'registration_date', 
+        'deactivation_date', 
+        'status', 
     ];
 
     protected $casts = [
         'dob' => 'date',
-        'registration_date' => 'datetime', // Cast as datetime để có method Carbon
-        'deactivation_date' => 'datetime', // Cast as datetime để có method Carbon
+        'registration_date' => 'datetime', 
+        'deactivation_date' => 'datetime', 
     ];
 
     public function user()

@@ -35,7 +35,7 @@ class IncomeEntryController extends Controller
             });
         }
 
-        $incomeEntries = $query->paginate(10);
+        $incomeEntries = $query->paginate(9);
         return view('income-entries.index', compact('incomeEntries'));
     }
 
@@ -96,7 +96,7 @@ class IncomeEntryController extends Controller
 
         $user = Auth::user();
 
-        $result = app(\App\Services\TaxCalculationService::class)->calculateMonthlyTaxV2($validatedData);
+        $result = app(TaxCalculationService::class)->calculateMonthlyTaxV2($validatedData);
         $error = isset($result['error']) && $result['error'] ? $result['error'] : null;
 
         if (!$error) {
